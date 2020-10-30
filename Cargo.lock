@@ -345,6 +345,7 @@ dependencies = [
 name = "production_server"
 version = "0.1.0"
 dependencies = [
+ "arktis",
  "arktis_extensions",
  "http",
 ]
