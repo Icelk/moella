@@ -12,3 +12,4 @@ export CC=o64-clang
 export CXX=o64-clang++
 
 cargo build --release --target x86_64-apple-darwin
+tar -czvf macOS.tar.gz ./target/x86_64-apple-darwin/release/production_server

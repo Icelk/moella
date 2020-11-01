@@ -4,3 +4,7 @@
 *.pem
 php*.dll
 php*.exe
+
+# Binaries
+linux.tar.*
+macOS.tar.*
