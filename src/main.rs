@@ -1,4 +1,4 @@
-use arktis::{self, Cached::*, Config, ContentType::*, FunctionBindings};
+use arktis::{Cached::*, Config, ContentType::*, FunctionBindings, *};
 use arktis_extensions;
 use http::uri::Uri;
 use std::io::{prelude::*, stdin};
@@ -25,7 +25,7 @@ fn main() {
         (Html, Dynamic)
     });
     bindings.bind_page("/throw_500", |mut buffer, _, storage| {
-        arktis::write_error(&mut buffer, 500, storage)
+        write_error(&mut buffer, 500, storage)
     });
     bindings.bind_dir("/capturing", |buffer, request, _| {
         buffer.extend(
@@ -41,14 +41,15 @@ fn main() {
             &b"'.</h1>Well, hope you enjoy <a href=\"/\">my site</a>!</main>\
             [footer]"[..],
         );
-        println!("Parsed: {:#?}", arktis::parse::format_headers(request));
+        println!("Parsed: {:#?}", parse::format_headers(request));
 
         (Html, Static)
     });
     let mut server = Config::with_bindings(bindings, 443);
     let mut storage = server.clone_storage();
-    server.add_extension(arktis::extension_helper::BoundExtension {
-        ext: arktis::extension_helper::Extension::new(&|| 9, &|value, _| {
+    server.add_extension(extension_helper::BoundExtension {
+        ext: extension_helper::Extension::new(&|| 9, &|value, data| {
+            *data.content_type = ContentType::PlainText;
             println!("Value: {}", value)
         }),
         extension_aliases: &["test"],
