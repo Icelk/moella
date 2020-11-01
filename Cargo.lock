@@ -35,7 +35,6 @@ name = "arktis"
 version = "0.1.0"
 dependencies = [
  "brotli",
- "fastcgi-client",
  "flate2",
  "http",
  "mime",
@@ -50,6 +49,7 @@ name = "arktis_extensions"
 version = "0.1.0"
 dependencies = [
  "arktis",
+ "fastcgi-client",
 ]
 
 [[package]]

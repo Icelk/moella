@@ -2,3 +2,5 @@
 /templates
 /public
 *.pem
+php*.dll
+php*.exe
