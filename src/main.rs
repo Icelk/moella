@@ -47,15 +47,8 @@ fn main() {
     });
     let mut server = Config::with_bindings(bindings, 443);
     let mut storage = server.clone_storage();
-    server.add_extension(extension_helper::BoundExtension {
-        ext: extension_helper::Extension::new(&|| 9, &|value, data| {
-            *data.content_type = ContentType::PlainText;
-            println!("Value: {}", value)
-        }),
-        extension_aliases: &["test"],
-        file_extension_aliases: &["i_dunno", "no"],
-    });
     server.external_extension(arktis_extensions::php);
+    server.external_extension(arktis_extensions::download);
     thread::spawn(move || server.run());
 
     // Commands in console
