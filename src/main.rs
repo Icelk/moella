@@ -53,8 +53,10 @@ fn main() {
         ],
     );
     let mut storage = server.clone_storage();
-    server.external_extension(arktis_extensions::php);
-    server.external_extension(arktis_extensions::download);
+    server.mount_extension(arktis_extensions::php);
+    server.mount_extension(arktis_extensions::download);
+    server.mount_extension(arktis_extensions::cache);
+    server.mount_extension(arktis_extensions::templates);
     thread::spawn(move || server.run());
 
     // Commands in console
