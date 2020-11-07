@@ -8,3 +8,4 @@ php*.exe
 # Binaries
 linux.tar.*
 macOS.tar.*
+windows.zip
