@@ -45,7 +45,13 @@ fn main() {
 
         (Html, Static)
     });
-    let mut server = Config::with_bindings(bindings, 443);
+    let mut server = Config::with_bindings(
+        bindings,
+        &[
+            (443, ConnectionScheme::HTTP1S),
+            (80, ConnectionScheme::HTTP1),
+        ],
+    );
     let mut storage = server.clone_storage();
     server.external_extension(arktis_extensions::php);
     server.external_extension(arktis_extensions::download);
