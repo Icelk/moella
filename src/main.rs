@@ -45,13 +45,16 @@ fn main() {
 
         (Html, Static)
     });
-    let mut server = Config::with_bindings(
-        bindings,
-        &[
-            (443, ConnectionScheme::HTTP1S),
-            (80, ConnectionScheme::HTTP1),
-        ],
-    );
+    let server_config = optional_server_config("cert.pem", "private_key.pem");
+
+    let mut ports = Vec::with_capacity(2);
+    ports.push((80, ConnectionSecurity::http1()));
+    if let Some(config) = server_config {
+        ports.push((443, ConnectionSecurity::http1s(config)));
+    } else {
+        eprintln!("Failed to get certificate! Not running on HTTPS.");
+    }
+    let mut server = Config::new(bindings, &ports);
     let mut storage = server.clone_storage();
     server.mount_extension(arktis_extensions::php);
     server.mount_extension(arktis_extensions::download);
