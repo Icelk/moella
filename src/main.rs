@@ -1,9 +1,7 @@
-use arktis::{Cached::*, Config, ContentType::*, FunctionBindings, *};
+use arktis::prelude::*;
 use arktis_extensions;
 use http::uri::Uri;
 use std::io::{prelude::*, stdin};
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use std::thread;
 
 fn main() {
