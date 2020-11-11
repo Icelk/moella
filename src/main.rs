@@ -53,10 +53,7 @@ fn main() {
     }
     let mut server = Config::new(bindings, &ports);
     let mut storage = server.clone_storage();
-    server.mount_extension(arktis_extensions::php);
-    server.mount_extension(arktis_extensions::download);
-    server.mount_extension(arktis_extensions::cache);
-    server.mount_extension(arktis_extensions::templates);
+    arktis_extensions::mount_all(&mut server);
     thread::spawn(move || server.run());
 
     // Commands in console
