@@ -1,8 +1,7 @@
-use arktis::prelude::*;
+use arktis::prelude::{threading::*, *};
 use arktis_extensions;
 use http::uri::Uri;
 use std::io::{prelude::*, stdin};
-use std::thread;
 
 fn main() {
     let mut bindings = FunctionBindings::new();
