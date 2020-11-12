@@ -4,6 +4,14 @@ use http::uri::Uri;
 use std::io::{prelude::*, stdin};
 
 fn main() {
+    // let mut vec = vec![];
+    // vec.extend(arktis::limiting::TOO_MANY_REQUESTS);
+    // println!(
+    //     "Len: {}",
+    //     arktis::cache::ByteResponse::with_header(vec)
+    //         .get_body()
+    //         .len()
+    // );
     let mut bindings = FunctionBindings::new();
     let times_called = Arc::new(Mutex::new(0));
     bindings.bind_page("/test", move |buffer, request, _| {
