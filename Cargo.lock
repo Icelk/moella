@@ -31,28 +31,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arktis"
-version = "0.1.0"
-dependencies = [
- "brotli",
- "flate2",
- "http",
- "mime",
- "mime_guess",
- "mio",
- "num_cpus",
- "rustls",
-]
-
-[[package]]
-name = "arktis_extensions"
-version = "0.1.0"
-dependencies = [
- "arktis",
- "fastcgi-client",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -232,6 +210,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "kvarn"
+version = "0.1.0"
+dependencies = [
+ "brotli",
+ "flate2",
+ "http",
+ "mime",
+ "mime_guess",
+ "mio",
+ "num_cpus",
+ "rustls",
+]
+
+[[package]]
+name = "kvarn_extensions"
+version = "0.1.0"
+dependencies = [
+ "fastcgi-client",
+ "kvarn",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -345,9 +345,9 @@ dependencies = [
 name = "production_server"
 version = "0.1.0"
 dependencies = [
- "arktis",
- "arktis_extensions",
  "http",
+ "kvarn",
+ "kvarn_extensions",
 ]
 
 [[package]]

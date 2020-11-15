@@ -3,7 +3,7 @@
 /public
 *.pem
 php*.dll
-php*.exe
+*.exe
 
 # Binaries
 linux.tar.*

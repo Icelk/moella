@@ -1,14 +1,14 @@
-use arktis::prelude::{threading::*, *};
-use arktis_extensions;
+use kvarn::prelude::{threading::*, *};
+use kvarn_extensions;
 use http::uri::Uri;
 use std::io::{prelude::*, stdin};
 
 fn main() {
     // let mut vec = vec![];
-    // vec.extend(arktis::limiting::TOO_MANY_REQUESTS);
+    // vec.extend(kvarn::limiting::TOO_MANY_REQUESTS);
     // println!(
     //     "Len: {}",
-    //     arktis::cache::ByteResponse::with_header(vec)
+    //     kvarn::cache::ByteResponse::with_header(vec)
     //         .get_body()
     //         .len()
     // );
@@ -61,7 +61,7 @@ fn main() {
     }
     let mut server = Config::new(bindings, &ports);
     let mut storage = server.clone_storage();
-    arktis_extensions::mount_all(&mut server);
+    kvarn_extensions::mount_all(&mut server);
     thread::spawn(move || server.run());
 
     // Commands in console
