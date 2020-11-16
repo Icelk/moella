@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 kvarn = { path = "../", default-features = false }
 kvarn_extensions = { path = "../kvarn_extensions" }
-http = "0.2.1"
+http = "0.2"
 
 [workspace]
 

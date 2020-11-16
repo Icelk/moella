@@ -1,6 +1,6 @@
+use http::uri::Uri;
 use kvarn::prelude::{threading::*, *};
 use kvarn_extensions;
-use http::uri::Uri;
 use std::io::{prelude::*, stdin};
 
 fn main() {
@@ -46,7 +46,6 @@ fn main() {
             &b"'.</h1>Well, hope you enjoy <a href=\"/\">my site</a>!</main>\
             [footer]"[..],
         );
-        println!("Parsed: {:#?}", parse::format_headers(request));
 
         (Html, Static)
     });
