@@ -1,0 +1,9 @@
+[md-title]
+        <title>Markdown post @ icelk.dev</title>
+
+[md-imports]
+        <link rel='stylesheet' href='/md.css'>
+
+[handwriting]
+        <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Dancing+Script:600&display=block'>
+        <style>code{ font-family: 'Dancing Script', cursive; font-weight: 600; color: #1C1C23; letter-spacing: 1px; } main{ --code: #fdf6e3; }</style>

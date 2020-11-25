@@ -1,5 +1,4 @@
 /target
-/templates
 /public
 *.pem
 php*.dll
