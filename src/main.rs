@@ -12,6 +12,7 @@ fn main() {
     //         .get_body()
     //         .len()
     // );
+
     let mut bindings = FunctionBindings::new();
     let times_called = Arc::new(Mutex::new(0));
     bindings.bind_page("/test", move |buffer, request, _| {
