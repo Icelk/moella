@@ -91,6 +91,7 @@ fn main() {
     }
     let mut server = Config::new(ports);
     let mut storage = server.clone_storage();
+    // Mount all extensions to server
     kvarn_extensions::mount_all(&mut server);
     thread::spawn(move || server.run());
 
