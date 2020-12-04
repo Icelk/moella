@@ -114,7 +114,7 @@ fn main() {
                         }
                     }
                     "rcc" => {
-                        // Responds cache clear
+                        // Response cache clear
                         let host = match words.next() {
                             Some(word) => word,
                             None => {
