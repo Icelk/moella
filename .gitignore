@@ -1,7 +1,6 @@
 /target
-/public
 *.pem
-php*.dll
+*.dll
 *.exe
 
 # Binaries

@@ -50,16 +50,46 @@ fn main() {
 
         (Html, Static)
     });
-    let server_config = optional_server_config("cert.pem", "private_key.pem");
+
+    // The *_cert.pem files are cert1.pem files when using Certbot.
+
+    let icelk_host = match Host::new(
+        "icelk_cert.pem",
+        "icelk_pk.pem",
+        "icelk.dev",
+        Some(bindings),
+    ) {
+        Ok(host) => host,
+        Err((err, host_without_cert)) => {
+            eprintln!(
+                "Failed to get certificate! Not running icelk.dev on HTTPS. {:?}",
+                err
+            );
+            host_without_cert
+        }
+    };
+    let kvarn_host = match Host::new("kvarn_cert.pem", "kvarn_pk.pem", "kvarn.org", None) {
+        Ok(host) => host,
+        Err((err, host_without_cert)) => {
+            eprintln!(
+                "Failed to get certificate! Not running arktis.org on HTTPS. {:?}",
+                err
+            );
+            host_without_cert
+        }
+    };
+
+    let hosts = HostData::builder(icelk_host)
+        .add_host("kvarn.org".to_string(), kvarn_host)
+        .build();
 
     let mut ports = Vec::with_capacity(2);
-    ports.push((80, ConnectionSecurity::http1()));
-    if let Some(config) = server_config {
-        ports.push((443, ConnectionSecurity::http1s(config)));
-    } else {
-        eprintln!("Failed to get certificate! Not running on HTTPS.");
+    ports.push((80, ConnectionSecurity::http1(), Arc::clone(&hosts)));
+    if hosts.has_secure() {
+        let config = Arc::new(HostData::make_config(&hosts));
+        ports.push((443, ConnectionSecurity::http1s(config), Arc::clone(&hosts)));
     }
-    let mut server = Config::new(bindings, &ports);
+    let mut server = Config::new(ports);
     let mut storage = server.clone_storage();
     kvarn_extensions::mount_all(&mut server);
     thread::spawn(move || server.run());
@@ -85,24 +115,33 @@ fn main() {
                     }
                     "rcc" => {
                         // Responds cache clear
-                        match storage.try_response() {
-                            Some(mut lock) => {
-                                let uri = match Uri::builder()
-                                    .path_and_query(words.next().unwrap_or(&""))
-                                    .build()
-                                {
-                                    Ok(uri) => uri,
-                                    Err(..) => {
-                                        eprintln!("Failed to format path");
-                                        continue;
-                                    }
-                                };
-                                match lock.remove(&uri) {
-                                    Some(..) => println!("Removed item from cache!"),
-                                    None => println!("No item to remove"),
-                                };
+                        let host = match words.next() {
+                            Some(word) => word,
+                            None => {
+                                println!("Please enter a host to clear cache in.");
+                                continue;
                             }
-                            None => println!("Response cache in use by server!"),
+                        };
+                        let uri = match Uri::builder()
+                            .path_and_query(words.next().unwrap_or(&""))
+                            .build()
+                        {
+                            Ok(uri) => uri,
+                            Err(..) => {
+                                eprintln!("Failed to format path");
+                                continue;
+                            }
+                        };
+                        let (cleared, found) = hosts.clear_page(host, &uri);
+
+                        if !found {
+                            println!("Did not found host to remove cached item from. Use 'default' or an empty string (e.g. '') for the default host.");
+                        } else {
+                            if cleared == 0 {
+                                println!("Did not remove any cached response.");
+                            } else {
+                                println!("Cleared a cached response.");
+                            }
                         }
                     }
                     "cfc" => match storage.try_fs() {
@@ -112,15 +151,21 @@ fn main() {
                         }
                         None => println!("File system cache in use by server!"),
                     },
-                    "crc" => match storage.try_response() {
-                        Some(mut lock) => {
-                            lock.clear();
-                            println!("Cleared response cache!");
+                    "crc" => {
+                        let cleared = hosts.clear_all_caches();
+                        if cleared == 0 {
+                            println!("Did not clear any response cache.");
+                        } else {
+                            println!(
+                                "Cleared {} response cache{}.",
+                                cleared,
+                                if cleared == 0 { "" } else { "s" }
+                            );
                         }
-                        None => println!("Response cache in use by server!"),
-                    },
+                    }
                     "cc" => {
                         storage.clear();
+                        hosts.clear_all_caches();
                         println!("Cleared all caches!");
                     }
                     _ => {
