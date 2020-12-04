@@ -15,5 +15,5 @@ http = "0.2"
 
 [features]
 default = ["kvarn/default", "kvarn/performance-monitoring", "kvarn/log"]
-minimal = ["kvarn/no-cache"]
+minimal = ["kvarn/default", "kvarn/no-cache"]
 production = ["kvarn/compression", "kvarn/fs", "kvarn/limiting", "kvarn/error-log"]
