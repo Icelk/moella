@@ -5,7 +5,7 @@ use std::io::{prelude::*, stdin};
 
 fn main() {
     // let mut vec = vec![];
-    // vec.extend(kvarn::limiting::TOO_MANY_REQUESTS);
+    // vec.extend(kvarn::cryptography::HTTP_REDIRECT_NO_HOST);
     // println!(
     //     "Len: {}",
     //     kvarn::cache::ByteResponse::with_header(vec)
@@ -53,31 +53,13 @@ fn main() {
 
     // The *_cert.pem files are cert1.pem files when using Certbot.
 
-    let icelk_host = match Host::new(
+    let icelk_host = Host::with_http_redirect(
         "icelk_cert.pem",
         "icelk_pk.pem",
         "icelk.dev",
         Some(bindings),
-    ) {
-        Ok(host) => host,
-        Err((err, host_without_cert)) => {
-            eprintln!(
-                "Failed to get certificate! Not running icelk.dev on HTTPS. {:?}",
-                err
-            );
-            host_without_cert
-        }
-    };
-    let kvarn_host = match Host::new("kvarn_cert.pem", "kvarn_pk.pem", "kvarn.org", None) {
-        Ok(host) => host,
-        Err((err, host_without_cert)) => {
-            eprintln!(
-                "Failed to get certificate! Not running arktis.org on HTTPS. {:?}",
-                err
-            );
-            host_without_cert
-        }
-    };
+    );
+    let kvarn_host = Host::with_http_redirect("kvarn_cert.pem", "kvarn_pk.pem", "kvarn.org", None);
 
     let hosts = HostData::builder(icelk_host)
         .add_host("kvarn.org".to_string(), kvarn_host)
@@ -94,6 +76,12 @@ fn main() {
     // Mount all extensions to server
     kvarn_extensions::mount_all(&mut server);
     thread::spawn(move || server.run());
+
+    // Start `kvarn_chute`
+    match std::process::Command::new("kvarn_chute").arg(".").spawn() {
+        Ok(_child) => println!("Successfully started 'kvarn_chute!'"),
+        Err(_) => eprintln!("Failed to start 'kvarn_chute'."),
+    }
 
     // Commands in console
     for line in stdin().lock().lines() {
