@@ -14,7 +14,7 @@ http = "0.2"
 [workspace]
 
 [features]
-default = ["kvarn/default", "kvarn/performance-monitoring", "kvarn/log"]
+default = ["interactive", "kvarn/default", "kvarn/performance-monitoring", "kvarn/log"]
 nc = ["kvarn/default", "kvarn/no-cache"]
 production = ["kvarn/compression", "kvarn/fs", "kvarn/limiting", "kvarn/error-log"]
 
