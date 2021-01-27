@@ -17,3 +17,6 @@ http = "0.2"
 default = ["kvarn/default", "kvarn/performance-monitoring", "kvarn/log"]
 nc = ["kvarn/default", "kvarn/no-cache"]
 production = ["kvarn/compression", "kvarn/fs", "kvarn/limiting", "kvarn/error-log"]
+
+# Interactive program
+interactive = []

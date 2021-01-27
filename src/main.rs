@@ -1,7 +1,5 @@
-use http::uri::Uri;
 use kvarn::prelude::{threading::*, *};
 use kvarn_extensions;
-use std::io::{prelude::*, stdin};
 
 fn main() {
     // let mut vec = vec![];
@@ -72,96 +70,106 @@ fn main() {
         ports.push((443, ConnectionSecurity::http1s(config), Arc::clone(&hosts)));
     }
     let mut server = Config::new(ports);
+    #[cfg(feature = "interactive")]
     let mut storage = server.clone_storage();
     // Mount all extensions to server
     kvarn_extensions::mount_all(&mut server);
+
+    #[cfg(feature = "interactive")]
     thread::spawn(move || server.run());
+    #[cfg(not(feature = "interactive"))]
+    server.run();
 
-    // Start `kvarn_chute`
-    match std::process::Command::new("kvarn_chute").arg(".").spawn() {
-        Ok(_child) => println!("Successfully started 'kvarn_chute!'"),
-        Err(_) => eprintln!("Failed to start 'kvarn_chute'."),
-    }
+    #[cfg(feature = "interactive")]
+    {
+        use http::uri::Uri;
+        use std::io::{prelude::*, stdin};
+        // Start `kvarn_chute`
+        match std::process::Command::new("kvarn_chute").arg(".").spawn() {
+            Ok(_child) => println!("Successfully started 'kvarn_chute!'"),
+            Err(_) => eprintln!("Failed to start 'kvarn_chute'."),
+        }
 
-    // Commands in console
-    for line in stdin().lock().lines() {
-        if let Ok(line) = line {
-            let mut words = line.split(" ");
-            if let Some(command) = words.next() {
-                match command {
-                    "fcc" => {
-                        // File cache clear
-                        match storage.try_fs() {
+        // Commands in console
+        for line in stdin().lock().lines() {
+            if let Ok(line) = line {
+                let mut words = line.split(" ");
+                if let Some(command) = words.next() {
+                    match command {
+                        "fcc" => {
+                            // File cache clear
+                            match storage.try_fs() {
+                                Some(mut lock) => {
+                                    let path = PathBuf::from(words.next().unwrap_or(&""));
+                                    match lock.remove(&path) {
+                                        Some(..) => println!("Removed item from cache!"),
+                                        None => println!("No item to remove"),
+                                    };
+                                }
+                                None => println!("File system cache in use by server!"),
+                            }
+                        }
+                        "rcc" => {
+                            // Response cache clear
+                            let host = match words.next() {
+                                Some(word) => word,
+                                None => {
+                                    println!("Please enter a host to clear cache in.");
+                                    continue;
+                                }
+                            };
+                            let uri = match Uri::builder()
+                                .path_and_query(words.next().unwrap_or(&""))
+                                .build()
+                            {
+                                Ok(uri) => uri,
+                                Err(..) => {
+                                    eprintln!("Failed to format path");
+                                    continue;
+                                }
+                            };
+                            let (cleared, found) = hosts.clear_page(host, &uri);
+
+                            if !found {
+                                println!("Did not found host to remove cached item from. Use 'default' or an empty string (e.g. '') for the default host.");
+                            } else {
+                                if cleared == 0 {
+                                    println!("Did not remove any cached response.");
+                                } else {
+                                    println!("Cleared a cached response.");
+                                }
+                            }
+                        }
+                        "cfc" => match storage.try_fs() {
                             Some(mut lock) => {
-                                let path = PathBuf::from(words.next().unwrap_or(&""));
-                                match lock.remove(&path) {
-                                    Some(..) => println!("Removed item from cache!"),
-                                    None => println!("No item to remove"),
-                                };
+                                lock.clear();
+                                println!("Cleared file system cache!");
                             }
                             None => println!("File system cache in use by server!"),
-                        }
-                    }
-                    "rcc" => {
-                        // Response cache clear
-                        let host = match words.next() {
-                            Some(word) => word,
-                            None => {
-                                println!("Please enter a host to clear cache in.");
-                                continue;
-                            }
-                        };
-                        let uri = match Uri::builder()
-                            .path_and_query(words.next().unwrap_or(&""))
-                            .build()
-                        {
-                            Ok(uri) => uri,
-                            Err(..) => {
-                                eprintln!("Failed to format path");
-                                continue;
-                            }
-                        };
-                        let (cleared, found) = hosts.clear_page(host, &uri);
-
-                        if !found {
-                            println!("Did not found host to remove cached item from. Use 'default' or an empty string (e.g. '') for the default host.");
-                        } else {
+                        },
+                        "crc" => {
+                            let cleared = hosts.clear_all_caches();
                             if cleared == 0 {
-                                println!("Did not remove any cached response.");
+                                println!("Did not clear any response cache.");
                             } else {
-                                println!("Cleared a cached response.");
+                                println!(
+                                    "Cleared {} response cache{}.",
+                                    cleared,
+                                    if cleared == 0 { "" } else { "s" }
+                                );
                             }
                         }
-                    }
-                    "cfc" => match storage.try_fs() {
-                        Some(mut lock) => {
-                            lock.clear();
-                            println!("Cleared file system cache!");
+                        "cc" => {
+                            storage.clear();
+                            hosts.clear_all_caches();
+                            println!("Cleared all caches!");
                         }
-                        None => println!("File system cache in use by server!"),
-                    },
-                    "crc" => {
-                        let cleared = hosts.clear_all_caches();
-                        if cleared == 0 {
-                            println!("Did not clear any response cache.");
-                        } else {
-                            println!(
-                                "Cleared {} response cache{}.",
-                                cleared,
-                                if cleared == 0 { "" } else { "s" }
-                            );
+                        _ => {
+                            eprintln!("Unknown command!");
                         }
-                    }
-                    "cc" => {
-                        storage.clear();
-                        hosts.clear_all_caches();
-                        println!("Cleared all caches!");
-                    }
-                    _ => {
-                        eprintln!("Unknown command!");
                     }
                 }
-            }
-        };
+            };
+        }
     }
 }
