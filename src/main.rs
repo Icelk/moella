@@ -31,7 +31,7 @@ fn main() {
     bindings.bind_page("/throw_500", |mut buffer, _, storage| {
         write_error(&mut buffer, 500, storage)
     });
-    bindings.bind_dir("/capturing", |buffer, request, _| {
+    bindings.bind_dir("/capturing/", |buffer, request, _| {
         buffer.extend(
             &b"!> tmpl standard\n\
             [head]\
