@@ -1,0 +1,2 @@
+#!/bin/sh
+cargo b --release --no-default-features --features "nc"
