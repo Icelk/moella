@@ -33,7 +33,7 @@ fn main() {
     });
     bindings.bind_dir("/capturing/", |buffer, request, _| {
         buffer.extend(
-            &b"!> tmpl standard\n\
+            &b"!> tmpl standard.html\n\
             [head]\
             [dependencies]\
             [close-head]\
