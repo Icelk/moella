@@ -1,0 +1,3 @@
+#!/bin/fish
+cargo b --features "nc"
+sudo target/debug/production_server
