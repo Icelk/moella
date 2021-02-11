@@ -37,7 +37,7 @@ fn main() {
             [head]\
             [dependencies]\
             [close-head]\
-            [top-bar]\
+            [navigation]\
             <main style='text-align: center;'><h1>You are visiting: '"[..],
         );
         buffer.extend(request.uri().path().as_bytes());
