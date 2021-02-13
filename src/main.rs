@@ -49,8 +49,6 @@ fn main() {
         (Html, Static)
     });
 
-    // The *_cert.pem files are cert1.pem files when using Certbot.
-
     let icelk_host = Host::with_http_redirect(
         "icelk_cert.pem",
         "icelk_pk.pem",
@@ -63,12 +61,28 @@ fn main() {
         .add_host("kvarn.org".to_string(), kvarn_host)
         .build();
 
+    #[cfg(not(feature = "high_ports"))]
+    let http_port = 80;
+    #[cfg(not(feature = "high_ports"))]
+    let https_port = 443;
+    #[cfg(feature = "high_ports")]
+    let http_port = 8080;
+    #[cfg(feature = "high_ports")]
+    let https_port = 8443;
+
     let mut ports = Vec::with_capacity(2);
-    ports.push((80, ConnectionSecurity::http1(), Arc::clone(&hosts)));
+
+    ports.push((http_port, ConnectionSecurity::http1(), Arc::clone(&hosts)));
+
     if hosts.has_secure() {
         let config = Arc::new(HostData::make_config(&hosts));
-        ports.push((443, ConnectionSecurity::http1s(config), Arc::clone(&hosts)));
+        ports.push((
+            https_port,
+            ConnectionSecurity::http1s(config),
+            Arc::clone(&hosts),
+        ));
     }
+
     let mut server = Config::new(ports);
     #[cfg(feature = "interactive")]
     let mut storage = server.clone_storage();
