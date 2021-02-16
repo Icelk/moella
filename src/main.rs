@@ -1,7 +1,8 @@
 use kvarn::prelude::{threading::*, *};
 use kvarn_extensions;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // let mut vec = vec![];
     // vec.extend(kvarn::cryptography::HTTP_REDIRECT_NO_HOST);
     // println!(
@@ -10,6 +11,8 @@ fn main() {
     //         .get_body()
     //         .len()
     // );
+
+    env_logger::init();
 
     let mut bindings = FunctionBindings::new();
     let times_called = Arc::new(Mutex::new(0));
@@ -72,14 +75,18 @@ fn main() {
 
     let mut ports = Vec::with_capacity(2);
 
-    ports.push((http_port, ConnectionSecurity::http1(), Arc::clone(&hosts)));
+    ports.push(kvarn::HostDescriptor::new(
+        http_port,
+        Arc::clone(&hosts),
+        ConnectionSecurity::http1(),
+    ));
 
     if hosts.has_secure() {
         let config = Arc::new(HostData::make_config(&hosts));
-        ports.push((
+        ports.push(kvarn::HostDescriptor::new(
             https_port,
-            ConnectionSecurity::http1s(config),
             Arc::clone(&hosts),
+            ConnectionSecurity::http1s(config),
         ));
     }
 
@@ -89,10 +96,12 @@ fn main() {
     // Mount all extensions to server
     kvarn_extensions::mount_all(&mut server);
 
-    #[cfg(feature = "interactive")]
-    thread::spawn(move || server.run());
-    #[cfg(not(feature = "interactive"))]
-    server.run();
+    // #[cfg(feature = "interactive")]
+    // thread::spawn(move || server.run());
+    // #[cfg(not(feature = "interactive"))]
+    futures::future::join_all(server.run().await).await;
+
+    std::thread::sleep(std::time::Duration::from_secs(2));
 
     #[cfg(feature = "interactive")]
     {
