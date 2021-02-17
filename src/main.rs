@@ -101,8 +101,6 @@ async fn main() {
     // #[cfg(not(feature = "interactive"))]
     futures::future::join_all(server.run().await).await;
 
-    std::thread::sleep(std::time::Duration::from_secs(2));
-
     #[cfg(feature = "interactive")]
     {
         use http::uri::Uri;
