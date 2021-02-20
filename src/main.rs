@@ -15,7 +15,7 @@ async fn main() {
     env_logger::init();
 
     let mut bindings = FunctionBindings::new();
-    let times_called = Arc::new(Mutex::new(0));
+    let times_called = Arc::new(Mutex::new(0_u32));
     bindings.bind_page("/test", move |buffer, request, _| {
         let mut tc = times_called.lock().unwrap();
         *tc += 1;
@@ -32,7 +32,11 @@ async fn main() {
         (Html, Dynamic)
     });
     bindings.bind_page("/throw_500", |mut buffer, _, storage| {
-        write_error(&mut buffer, 500, storage)
+        write_error(
+            &mut buffer,
+            http::StatusCode::INTERNAL_SERVER_ERROR,
+            storage,
+        )
     });
     bindings.bind_dir("/capturing/", |buffer, request, _| {
         buffer.extend(
