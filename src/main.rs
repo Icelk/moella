@@ -12,7 +12,8 @@ async fn main() {
     //         .len()
     // );
 
-    env_logger::init();
+    let env_log = env_logger::Env::default().default_filter_or("rustls=off,warn");
+    env_logger::Builder::from_env(env_log).init();
 
     let mut bindings = FunctionBindings::new();
     let times_called = Arc::new(Mutex::new(0_u32));
@@ -86,7 +87,9 @@ async fn main() {
     ));
 
     if hosts.has_secure() {
-        let config = Arc::new(HostData::make_config(&hosts));
+        let mut config = HostData::make_config(&hosts);
+        config.alpn_protocols = vec![b"h2".to_vec()];
+        let config = Arc::new(config);
         ports.push(kvarn::HostDescriptor::new(
             https_port,
             Arc::clone(&hosts),
@@ -100,10 +103,10 @@ async fn main() {
     // Mount all extensions to server
     kvarn_extensions::mount_all(&mut server);
 
-    // #[cfg(feature = "interactive")]
-    // thread::spawn(move || server.run());
-    // #[cfg(not(feature = "interactive"))]
-    futures::future::join_all(server.run().await).await;
+    #[cfg(feature = "interactive")]
+    thread::spawn(move || server.run());
+    #[cfg(not(feature = "interactive"))]
+    server.run().await;
 
     #[cfg(feature = "interactive")]
     {
