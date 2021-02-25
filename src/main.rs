@@ -104,7 +104,7 @@ async fn main() {
     kvarn_extensions::mount_all(&mut server);
 
     #[cfg(feature = "interactive")]
-    thread::spawn(move || server.run());
+    tokio::spawn(async move { server.run().await });
     #[cfg(not(feature = "interactive"))]
     server.run().await;
 
