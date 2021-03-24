@@ -4,7 +4,7 @@ This is a reference implementation of the Kvarn server library.
 It's for my personal use for my domains [icelk.dev](https://icelk.dev/) and [kvarn.org](https://kvarn.org/)
 and will therefore not work with most configurations.
 
-For now, i suggest forking this repo and changing the appropriate values.
+For now, I suggest forking this repo and tweaking it to your liking.
 
 
 # Future
