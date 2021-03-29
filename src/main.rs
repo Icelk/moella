@@ -3,15 +3,6 @@ use kvarn_extensions;
 
 #[tokio::main]
 async fn main() {
-    // let mut vec = vec![];
-    // vec.extend(kvarn::cryptography::HTTP_REDIRECT_NO_HOST);
-    // println!(
-    //     "Len: {}",
-    //     kvarn::cache::ByteResponse::with_header(vec)
-    //         .get_body()
-    //         .len()
-    // );
-
     let env_log = env_logger::Env::default().default_filter_or("rustls=off,warn");
     env_logger::Builder::from_env(env_log).init();
 
