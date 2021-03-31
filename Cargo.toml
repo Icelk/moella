@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 kvarn = { path = "../", default-features = false }
-kvarn_extensions = { path = "../kvarn_extensions" }
+kvarn_extensions = { path = "../kvarn_extensions", default-features = false }
 http = "0.2"
 env_logger = "0.8.3"
 tokio = { version = "1.2.0", features = ["macros"] }
