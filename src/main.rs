@@ -1,8 +1,87 @@
+use std::net::SocketAddr;
+
 use kvarn::{
-    extensions::Extensions,
-    prelude::{threading::*, *},
+    application::ResponsePipe,
+    extensions::{Extensions, HostWrapper, RequestWrapper, ResponsePipeWrapperMut, RetFut},
+    prelude::*,
 };
 use kvarn_extensions;
+
+fn push(
+    request: RequestWrapper,
+    bytes: Bytes,
+    mut response: ResponsePipeWrapperMut,
+    addr: SocketAddr,
+    host: HostWrapper,
+) -> RetFut<()> {
+    Box::pin(async move {
+        // If it is not HTTP/1
+        if let ResponsePipe::Http1(_) = unsafe { &response.get_inner() } {
+            return;
+        }
+
+        // ToDo: check if content-type is HTML!
+
+        match str::from_utf8(&bytes) {
+            Ok(string) => {
+                let mut urls = url_crawl::get_urls(string);
+                let host = unsafe { host.get_inner() };
+
+                urls.retain(|url| {
+                    let correct_host = {
+                        // only push https://; it's eight bytes long
+                        url.get(8..)
+                            .map(|url| url.starts_with(host.host_name))
+                            .unwrap_or(false)
+                    };
+                    url.starts_with("/") || correct_host
+                });
+
+                info!("Pushing urls {:?}", urls);
+
+                for url in urls {
+                    unsafe {
+                        let mut uri = request.get_inner().uri().clone().into_parts();
+                        match http::uri::PathAndQuery::from_maybe_shared(url.into_bytes())
+                            .ok()
+                            .and_then(|path| {
+                                uri.path_and_query = Some(path);
+                                http::Uri::from_parts(uri).ok()
+                            }) {
+                            Some(url) => {
+                                let mut request = utility::empty_clone_request(request.get_inner());
+                                *request.uri_mut() = url;
+
+                                let empty_request = utility::empty_clone_request(&request);
+
+                                let response = response.get_inner();
+                                let mut response_pipe = match response.push_request(empty_request) {
+                                    Ok(pipe) => pipe,
+                                    Err(_) => return,
+                                };
+
+                                let request = request.map(|_| kvarn::application::Body::Empty);
+
+                                if let Err(err) = kvarn::handle_cache(
+                                    request,
+                                    addr,
+                                    kvarn::SendKind::Push(&mut response_pipe),
+                                    host,
+                                )
+                                .await
+                                {
+                                    error!("Error occurred when pushing request. {:?}", err);
+                                };
+                            }
+                            None => {}
+                        }
+                    }
+                }
+            }
+            Err(_) => {}
+        }
+    })
+}
 
 #[tokio::main]
 async fn main() {
@@ -54,23 +133,24 @@ async fn main() {
     // Mount all extensions to server
     let mut extensions = Extensions::new();
     kvarn_extensions::mount_all(&mut extensions);
+    extensions.add_post(&push);
 
     let icelk_host = Host::with_http_redirect(
+        "icelk.dev",
         "icelk_cert.pem",
         "icelk_pk.pem",
         PathBuf::from("icelk.dev"),
         extensions.clone(),
     );
     let kvarn_host = Host::with_http_redirect(
+        "kvarn.org",
         "kvarn_cert.pem",
         "kvarn_pk.pem",
         PathBuf::from("kvarn.org"),
         extensions,
     );
 
-    let hosts = HostData::builder("icelk.dev".to_string(), icelk_host)
-        .add_host("kvarn.org".to_string(), kvarn_host)
-        .build();
+    let hosts = HostData::builder(icelk_host).add_host(kvarn_host).build();
 
     #[cfg(not(feature = "high_ports"))]
     let http_port = 80;
