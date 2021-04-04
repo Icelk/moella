@@ -166,17 +166,17 @@ async fn main() {
     ports.push(kvarn::HostDescriptor::new(
         http_port,
         Arc::clone(&hosts),
-        ConnectionSecurity::http1(),
+        None,
     ));
 
     if hosts.has_secure() {
         let mut config = HostData::make_config(&hosts);
-        config.alpn_protocols = vec![b"h2".to_vec()];
+        config.alpn_protocols = kvarn::alpn();
         let config = Arc::new(config);
         ports.push(kvarn::HostDescriptor::new(
             https_port,
             Arc::clone(&hosts),
-            ConnectionSecurity::http1s(config),
+            Some(config),
         ));
     }
 
