@@ -1,87 +1,5 @@
-use std::net::SocketAddr;
-
-use kvarn::{
-    application::ResponsePipe,
-    extensions::{Extensions, HostWrapper, RequestWrapper, ResponsePipeWrapperMut, RetFut},
-    prelude::*,
-};
+use kvarn::{extensions::Extensions, prelude::*};
 use kvarn_extensions;
-
-fn push(
-    request: RequestWrapper,
-    bytes: Bytes,
-    mut response_pipe: ResponsePipeWrapperMut,
-    addr: SocketAddr,
-    host: HostWrapper,
-) -> RetFut<()> {
-    Box::pin(async move {
-        // If it is not HTTP/1
-        if let ResponsePipe::Http1(_) = unsafe { &response_pipe.get_inner() } {
-            return;
-        }
-
-        match str::from_utf8(&bytes) {
-            // If it is HTML
-            Ok(string) if bytes.starts_with(b"<!doctype HTML>") => {
-                let mut urls = url_crawl::get_urls(string);
-                let host = unsafe { host.get_inner() };
-
-                urls.retain(|url| {
-                    let correct_host = {
-                        // only push https://; it's eight bytes long
-                        url.get(8..)
-                            .map(|url| url.starts_with(host.host_name))
-                            .unwrap_or(false)
-                    };
-                    url.starts_with("/") || correct_host
-                });
-
-                info!("Pushing urls {:?}", urls);
-
-                for url in urls {
-                    unsafe {
-                        let mut uri = request.get_inner().uri().clone().into_parts();
-                        match http::uri::PathAndQuery::from_maybe_shared(url.into_bytes())
-                            .ok()
-                            .and_then(|path| {
-                                uri.path_and_query = Some(path);
-                                http::Uri::from_parts(uri).ok()
-                            }) {
-                            Some(url) => {
-                                let mut request = utility::empty_clone_request(request.get_inner());
-                                *request.uri_mut() = url;
-
-                                let empty_request = utility::empty_clone_request(&request);
-
-                                let response = response_pipe.get_inner();
-                                let mut response_pipe = match response.push_request(empty_request) {
-                                    Ok(pipe) => pipe,
-                                    Err(_) => return,
-                                };
-
-                                let request = request.map(|_| kvarn::application::Body::Empty);
-
-                                if let Err(err) = kvarn::handle_cache(
-                                    request,
-                                    addr,
-                                    kvarn::SendKind::Push(&mut response_pipe),
-                                    host,
-                                )
-                                .await
-                                {
-                                    error!("Error occurred when pushing request. {:?}", err);
-                                };
-                            }
-                            None => {}
-                        }
-                    }
-                }
-            }
-            // Else, do nothing
-            _ => {}
-        }
-    })
-}
 
 #[tokio::main]
 async fn main() {
@@ -133,7 +51,6 @@ async fn main() {
     // Mount all extensions to server
     let mut extensions = Extensions::new();
     kvarn_extensions::mount_all(&mut extensions);
-    extensions.add_post(&push);
 
     let icelk_host = Host::with_http_redirect(
         "icelk.dev",
