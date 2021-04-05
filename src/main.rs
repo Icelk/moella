@@ -10,20 +10,19 @@ use kvarn_extensions;
 fn push(
     request: RequestWrapper,
     bytes: Bytes,
-    mut response: ResponsePipeWrapperMut,
+    mut response_pipe: ResponsePipeWrapperMut,
     addr: SocketAddr,
     host: HostWrapper,
 ) -> RetFut<()> {
     Box::pin(async move {
         // If it is not HTTP/1
-        if let ResponsePipe::Http1(_) = unsafe { &response.get_inner() } {
+        if let ResponsePipe::Http1(_) = unsafe { &response_pipe.get_inner() } {
             return;
         }
 
-        // ToDo: check if content-type is HTML!
-
         match str::from_utf8(&bytes) {
-            Ok(string) => {
+            // If it is HTML
+            Ok(string) if bytes.starts_with(b"<!doctype HTML>") => {
                 let mut urls = url_crawl::get_urls(string);
                 let host = unsafe { host.get_inner() };
 
@@ -54,7 +53,7 @@ fn push(
 
                                 let empty_request = utility::empty_clone_request(&request);
 
-                                let response = response.get_inner();
+                                let response = response_pipe.get_inner();
                                 let mut response_pipe = match response.push_request(empty_request) {
                                     Ok(pipe) => pipe,
                                     Err(_) => return,
@@ -78,7 +77,8 @@ fn push(
                     }
                 }
             }
-            Err(_) => {}
+            // Else, do nothing
+            _ => {}
         }
     })
 }
