@@ -1,7 +1,8 @@
 use kvarn::{extensions::Extensions, prelude::*};
 use kvarn_extensions;
 
-#[tokio::main]
+#[cfg_attr(feature = "mt", tokio::main)]
+#[cfg_attr(not(feature = "mt"), tokio::main(flavor = "current_thread"))]
 async fn main() {
     let env_log = env_logger::Env::default().default_filter_or("rustls=off,warn");
     env_logger::Builder::from_env(env_log).init();
@@ -52,6 +53,7 @@ async fn main() {
     let mut extensions = Extensions::new();
     kvarn_extensions::mount_all(&mut extensions);
 
+    #[cfg(feature = "https")]
     let icelk_host = Host::with_http_redirect(
         "icelk.dev",
         "icelk_cert.pem",
@@ -59,6 +61,7 @@ async fn main() {
         PathBuf::from("icelk.dev"),
         extensions.clone(),
     );
+    #[cfg(feature = "https")]
     let kvarn_host = Host::with_http_redirect(
         "kvarn.org",
         "kvarn_cert.pem",
@@ -66,16 +69,22 @@ async fn main() {
         PathBuf::from("kvarn.org"),
         extensions,
     );
+    #[cfg(not(feature = "https"))]
+    let kvarn_host = Host::no_certification("kvarn.org", PathBuf::from("kvarn.org"), extensions);
 
+    #[cfg(feature = "https")]
     let hosts = HostData::builder(icelk_host).add_host(kvarn_host).build();
+
+    #[cfg(not(feature = "https"))]
+    let hosts = HostData::builder(kvarn_host).build();
 
     #[cfg(not(feature = "high_ports"))]
     let http_port = 80;
-    #[cfg(not(feature = "high_ports"))]
+    #[cfg(all(not(feature = "high_ports"), feature = "https"))]
     let https_port = 443;
     #[cfg(feature = "high_ports")]
     let http_port = 8080;
-    #[cfg(feature = "high_ports")]
+    #[cfg(all(feature = "high_ports", feature = "https"))]
     let https_port = 8443;
 
     let mut ports = Vec::with_capacity(2);
@@ -83,9 +92,11 @@ async fn main() {
     ports.push(kvarn::HostDescriptor::new(
         http_port,
         Arc::clone(&hosts),
+        #[cfg(feature = "https")]
         None,
     ));
 
+    #[cfg(feature = "https")]
     if hosts.has_secure() {
         let mut config = HostData::make_config(&hosts);
         config.alpn_protocols = kvarn::alpn();

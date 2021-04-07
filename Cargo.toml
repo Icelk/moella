@@ -18,12 +18,15 @@ futures = "^0.3"
 [workspace]
 
 [features]
-default = ["interactive", "kvarn/default"]
-nc = ["kvarn/default", "kvarn/no-cache"]
-production = ["kvarn/compression", "kvarn/fs", "kvarn/limiting"]
+default = ["mt", "https", "interactive", "kvarn/default"]
+nc = ["kvarn/no-cache"]
+production = ["kvarn/https", "kvarn/http2", "kvarn/mt", "kvarn/compression", "kvarn/fs", "kvarn/limiting"]
 
 # Interactive program
 interactive = []
 
 # Run only on port 8080 for HTTP and 8443 for HTTPS instead of 80 and 443 for testing without root access
 high_ports = []
+
+mt = ["kvarn/mt"]
+https = ["kvarn/https"]
