@@ -1,4 +1,4 @@
-use kvarn::{extensions::Extensions, prelude::*};
+use kvarn::prelude::*;
 use kvarn_extensions;
 
 #[cfg_attr(feature = "mt", tokio::main)]
@@ -7,51 +7,57 @@ async fn main() {
     let env_log = env_logger::Env::default().default_filter_or("rustls=off,warn");
     env_logger::Builder::from_env(env_log).init();
 
-    // let mut bindings = FunctionBindings::new();
-    // let times_called = Arc::new(Mutex::new(0_u32));
-    // bindings.bind_page("/test", move |buffer, request, _| {
-    //     let mut tc = times_called.lock().unwrap();
-    //     *tc += 1;
-
-    //     buffer.extend(
-    //         format!(
-    //             "<h1>Welcome to my site!</h1> You are calling: {} For the {} time.",
-    //             request.uri(),
-    //             &tc
-    //         )
-    //         .as_bytes(),
-    //     );
-
-    //     (Html, Dynamic)
-    // });
-    // bindings.bind_page("/throw_500", |mut buffer, _, storage| {
-    //     write_error(
-    //         &mut buffer,
-    //         http::StatusCode::INTERNAL_SERVER_ERROR,
-    //         storage,
-    //     )
-    // });
-    // bindings.bind_dir("/capturing/", |buffer, request, _| {
-    //     buffer.extend(
-    //         &b"!> tmpl standard.html\n\
-    //         [head]\
-    //         [dependencies]\
-    //         [close-head]\
-    //         [navigation]\
-    //         <main style='text-align: center;'><h1>You are visiting: '"[..],
-    //     );
-    //     buffer.extend(request.uri().path().as_bytes());
-    //     buffer.extend(
-    //         &b"'.</h1>Well, hope you enjoy <a href=\"/\">my site</a>!</main>\
-    //         [footer]"[..],
-    //     );
-
-    //     (Html, Static)
-    // });
-
     // Mount all extensions to server
-    let mut extensions = Extensions::new();
-    kvarn_extensions::mount_all(&mut extensions);
+    let mut icelk_extensions = Extensions::new();
+    kvarn_extensions::mount_all(&mut icelk_extensions);
+
+    let times_called = Arc::new(threading::atomic::AtomicUsize::new(0));
+    icelk_extensions.add_prepare_single(
+        "/test".to_string(),
+        prepare!(request, host, path, addr, times_called, {
+            let tc = times_called;
+            let tc = tc.fetch_add(1, threading::atomic::Ordering::Relaxed);
+
+            let body = build_bytes!(
+                b"<h1>Welcome to my site!</h1> You are calling: ",
+                request.uri().path().as_bytes(),
+                b" for the ",
+                tc.to_string().as_bytes(),
+                b" time",
+            );
+
+            // It must be OK; we haven't changed the response
+            let response = Response::new(body);
+
+            (
+                response,
+                ClientCachePreference::None,
+                ServerCachePreference::None,
+                CompressPreference::Full,
+            )
+        }),
+    );
+    icelk_extensions.add_prepare_single(
+        "/throw_500".to_string(),
+        prepare!(_req, host, _path, _addr, , {
+            utility::default_error_response(StatusCode::INTERNAL_SERVER_ERROR, host).await
+        }),
+    );
+    icelk_extensions.add_prepare_fn(
+        Box::new(|req| req.uri().path().starts_with("/capturing/")),
+        prepare!(req, host, path, _addr, , {
+            let body = build_bytes!(b"!> tmpl standard.html\n\
+            [head]\
+            [dependencies]\
+            [close-head]\
+            [navigation]\
+            <main style='text-align: center;'><h1>You are visiting: '",
+            req.uri().path().as_bytes(),
+            b"'.</h1>Well, hope you enjoy <a href='/'>my site</a>!</main>"
+        );
+            (Response::new(body), ClientCachePreference::Full, ServerCachePreference::None, CompressPreference::Full)
+        }),
+    );
 
     #[cfg(feature = "https")]
     let icelk_host = Host::with_http_redirect(
@@ -59,15 +65,17 @@ async fn main() {
         "icelk_cert.pem",
         "icelk_pk.pem",
         PathBuf::from("icelk.dev"),
-        extensions.clone(),
+        icelk_extensions,
     );
+    let mut kvarn_extensions = Extensions::new();
+    kvarn_extensions::mount_all(&mut kvarn_extensions);
     #[cfg(feature = "https")]
     let kvarn_host = Host::with_http_redirect(
         "kvarn.org",
         "kvarn_cert.pem",
         "kvarn_pk.pem",
         PathBuf::from("kvarn.org"),
-        extensions,
+        kvarn_extensions,
     );
     #[cfg(not(feature = "https"))]
     let kvarn_host = Host::no_certification("kvarn.org", PathBuf::from("kvarn.org"), extensions);
