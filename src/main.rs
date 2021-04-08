@@ -77,7 +77,8 @@ async fn main() {
         kvarn_extensions,
     );
     #[cfg(not(feature = "https"))]
-    let kvarn_host = Host::no_certification("kvarn.org", PathBuf::from("kvarn.org"), extensions);
+    let kvarn_host =
+        Host::no_certification("kvarn.org", PathBuf::from("kvarn.org"), kvarn_extensions);
 
     #[cfg(feature = "https")]
     let hosts = HostData::builder(icelk_host).add_host(kvarn_host).build();
@@ -125,16 +126,20 @@ async fn main() {
     #[cfg(feature = "interactive")]
     {
         use http::uri::Uri;
-        use std::io::{prelude::*, stdin};
         // Start `kvarn_chute`
         match std::process::Command::new("kvarn_chute").arg(".").spawn() {
             Ok(_child) => println!("Successfully started 'kvarn_chute!'"),
             Err(_) => eprintln!("Failed to start 'kvarn_chute'."),
         }
 
+        use tokio::io::AsyncBufReadExt;
         // Commands in console
-        for line in stdin().lock().lines() {
-            if let Ok(line) = line {
+        for line in tokio::io::BufReader::new(tokio::io::stdin())
+            .lines()
+            .next_line()
+            .await
+        {
+            if let Some(line) = line {
                 let mut words = line.split(" ");
                 if let Some(command) = words.next() {
                     match command {
