@@ -20,7 +20,7 @@ futures = "^0.3"
 [features]
 default = ["mt", "https", "interactive", "kvarn/default"]
 nc = ["kvarn/no-cache"]
-production = ["kvarn/https", "kvarn/http2", "kvarn/mt", "kvarn/compression", "kvarn/fs", "kvarn/limiting"]
+production = ["https", "kvarn/http2", "kvarn/mt", "kvarn/compression", "kvarn/fs", "kvarn/limiting"]
 
 # Interactive program
 interactive = ["tokio/io-std"]
