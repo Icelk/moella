@@ -8,8 +8,7 @@ async fn main() {
     env_logger::Builder::from_env(env_log).init();
 
     // Mount all extensions to server
-    let mut icelk_extensions = Extensions::new();
-    kvarn_extensions::mount_all(&mut icelk_extensions);
+    let mut icelk_extensions = kvarn_extensions::new();
 
     let times_called = Arc::new(threading::atomic::AtomicUsize::new(0));
     icelk_extensions.add_prepare_single(
@@ -67,8 +66,8 @@ async fn main() {
         PathBuf::from("icelk.dev"),
         icelk_extensions,
     );
-    let mut kvarn_extensions = Extensions::new();
-    kvarn_extensions::mount_all(&mut kvarn_extensions);
+    let kvarn_extensions = kvarn_extensions::new();
+
     #[cfg(feature = "https")]
     let kvarn_host = Host::with_http_redirect(
         "kvarn.org",
