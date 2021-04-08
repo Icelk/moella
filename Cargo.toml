@@ -23,7 +23,7 @@ nc = ["kvarn/no-cache"]
 production = ["https", "kvarn/http2", "kvarn/mt", "kvarn/compression", "kvarn/fs", "kvarn/limiting"]
 
 # Interactive program
-interactive = ["tokio/io-std"]
+interactive = []
 
 # Run only on port 8080 for HTTP and 8443 for HTTPS instead of 80 and 443 for testing without root access
 high_ports = []

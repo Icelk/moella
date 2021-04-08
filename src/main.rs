@@ -125,84 +125,96 @@ async fn main() {
 
     #[cfg(feature = "interactive")]
     {
-        use http::uri::Uri;
-        // Start `kvarn_chute`
-        match std::process::Command::new("kvarn_chute").arg(".").spawn() {
-            Ok(_child) => println!("Successfully started 'kvarn_chute!'"),
-            Err(_) => eprintln!("Failed to start 'kvarn_chute'."),
-        }
+        let thread = std::thread::spawn(move || {
+            use futures::executor::block_on;
+            use http::uri::Uri;
+            use std::io::{prelude::*, stdin};
 
-        use tokio::io::AsyncBufReadExt;
-        // Commands in console
-        for line in tokio::io::BufReader::new(tokio::io::stdin())
-            .lines()
-            .next_line()
-            .await
-        {
-            if let Some(line) = line {
-                let mut words = line.split(" ");
-                if let Some(command) = words.next() {
-                    match command {
-                        "fcc" => {
-                            // File cache clear
-                            match hosts
-                                .clear_file_in_cache(&Path::new(words.next().unwrap_or(&"")))
-                                .await
-                            {
-                                true => println!("Removed item from cache!"),
-                                false => println!("No item to remove"),
+            // Start `kvarn_chute`
+            match std::process::Command::new("kvarn_chute").arg(".").spawn() {
+                Ok(_child) => println!("Successfully started 'kvarn_chute!'"),
+                Err(_) => eprintln!("Failed to start 'kvarn_chute'."),
+            }
+
+            // Commands in console
+            for line in stdin().lock().lines() {
+                if let Ok(line) = line {
+                    let mut words = line.split(" ");
+                    if let Some(command) = words.next() {
+                        match command {
+                            "fcc" => {
+                                // File cache clear
+                                let hosts = hosts.clone();
+                                match block_on(async move {
+                                    hosts
+                                        .clear_file_in_cache(&Path::new(
+                                            words.next().unwrap_or(&""),
+                                        ))
+                                        .await
+                                }) {
+                                    true => println!("Removed item from cache!"),
+                                    false => println!("No item to remove"),
+                                }
                             }
-                        }
-                        "rcc" => {
-                            // Response cache clear
-                            let host = match words.next() {
-                                Some(word) => word,
-                                None => {
-                                    println!("Please enter a host to clear cache in.");
-                                    continue;
-                                }
-                            };
-                            let uri = match Uri::builder()
-                                .path_and_query(words.next().unwrap_or(&""))
-                                .build()
-                            {
-                                Ok(uri) => uri,
-                                Err(..) => {
-                                    eprintln!("Failed to format path");
-                                    continue;
-                                }
-                            };
-                            let (cleared, found) = hosts.clear_page(host, &uri).await;
+                            "rcc" => {
+                                // Response cache clear
+                                let host = match words.next() {
+                                    Some(word) => word,
+                                    None => {
+                                        println!("Please enter a host to clear cache in.");
+                                        continue;
+                                    }
+                                };
+                                let uri = match Uri::builder()
+                                    .path_and_query(words.next().unwrap_or(&""))
+                                    .build()
+                                {
+                                    Ok(uri) => uri,
+                                    Err(..) => {
+                                        eprintln!("Failed to format path");
+                                        continue;
+                                    }
+                                };
+                                let hosts = hosts.clone();
+                                let (cleared, found) =
+                                    block_on(async move { hosts.clear_page(host, &uri).await });
 
-                            if !found {
-                                println!("Did not found host to remove cached item from. Use 'default' or an empty string (e.g. '') for the default host.");
-                            } else {
-                                if !cleared {
-                                    println!("Did not remove any cached response.");
+                                if !found {
+                                    println!("Did not found host to remove cached item from. Use 'default' or an empty string (e.g. '') for the default host.");
                                 } else {
-                                    println!("Cleared a cached response.");
+                                    if !cleared {
+                                        println!("Did not remove any cached response.");
+                                    } else {
+                                        println!("Cleared a cached response.");
+                                    }
                                 }
                             }
-                        }
-                        "cfc" => {
-                            hosts.clear_file_caches().await;
-                            println!("Cleared file system cache!");
-                        }
-                        "crc" => {
-                            hosts.clear_response_caches().await;
-                            println!("Cleared whole response cache.",);
-                        }
-                        "cc" => {
-                            hosts.clear_response_caches().await;
-                            hosts.clear_file_caches().await;
-                            println!("Cleared all caches!");
-                        }
-                        _ => {
-                            eprintln!("Unknown command!");
+                            "cfc" => {
+                                let hosts = hosts.clone();
+                                block_on(async move { hosts.clear_file_caches().await });
+                                println!("Cleared file system cache!");
+                            }
+                            "crc" => {
+                                let hosts = hosts.clone();
+                                block_on(async move { hosts.clear_response_caches().await });
+                                println!("Cleared whole response cache.",);
+                            }
+                            "cc" => {
+                                let hosts = hosts.clone();
+                                block_on(async move {
+                                    hosts.clear_response_caches().await;
+                                    hosts.clear_file_caches().await
+                                });
+                                println!("Cleared all caches!");
+                            }
+                            _ => {
+                                eprintln!("Unknown command!");
+                            }
                         }
                     }
-                }
-            };
-        }
+                };
+            }
+        });
+        thread.join().unwrap();
     }
 }
