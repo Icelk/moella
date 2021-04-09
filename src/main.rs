@@ -127,7 +127,6 @@ async fn main() {
     {
         let thread = std::thread::spawn(move || {
             use futures::executor::block_on;
-            use http::uri::Uri;
             use std::io::{prelude::*, stdin};
 
             // Start `kvarn_chute`
@@ -144,14 +143,11 @@ async fn main() {
                         match command {
                             "fcc" => {
                                 // File cache clear
-                                let hosts = hosts.clone();
-                                match block_on(async move {
-                                    hosts
-                                        .clear_file_in_cache(&Path::new(
-                                            words.next().unwrap_or(&""),
-                                        ))
-                                        .await
-                                }) {
+                                match block_on(
+                                    hosts.clear_file_in_cache(&Path::new(
+                                        words.next().unwrap_or(&""),
+                                    )),
+                                ) {
                                     true => println!("Removed item from cache!"),
                                     false => println!("No item to remove"),
                                 }
@@ -175,9 +171,7 @@ async fn main() {
                                         continue;
                                     }
                                 };
-                                let hosts = hosts.clone();
-                                let (cleared, found) =
-                                    block_on(async move { hosts.clear_page(host, &uri).await });
+                                let (cleared, found) = block_on(hosts.clear_page(host, &uri));
 
                                 if !found {
                                     println!("Did not found host to remove cached item from. Use 'default' or an empty string (e.g. '') for the default host.");
@@ -190,13 +184,11 @@ async fn main() {
                                 }
                             }
                             "cfc" => {
-                                let hosts = hosts.clone();
-                                block_on(async move { hosts.clear_file_caches().await });
+                                block_on(hosts.clear_file_caches());
                                 println!("Cleared file system cache!");
                             }
                             "crc" => {
-                                let hosts = hosts.clone();
-                                block_on(async move { hosts.clear_response_caches().await });
+                                block_on(hosts.clear_response_caches());
                                 println!("Cleared whole response cache.",);
                             }
                             "cc" => {
