@@ -13,7 +13,7 @@ async fn main() {
     let times_called = Arc::new(threading::atomic::AtomicUsize::new(0));
     icelk_extensions.add_prepare_single(
         "/test".to_string(),
-        prepare!(request, host, path, addr, times_called, {
+        prepare!(request, host, path, addr, move |times_called| {
             let tc = times_called;
             let tc = tc.fetch_add(1, threading::atomic::Ordering::Relaxed);
 
@@ -38,23 +38,29 @@ async fn main() {
     );
     icelk_extensions.add_prepare_single(
         "/throw_500".to_string(),
-        prepare!(_req, host, _path, _addr, , {
+        prepare!(_req, host, _path, _addr {
             utility::default_error_response(StatusCode::INTERNAL_SERVER_ERROR, host).await
         }),
     );
     icelk_extensions.add_prepare_fn(
         Box::new(|req| req.uri().path().starts_with("/capturing/")),
-        prepare!(req, host, path, _addr, , {
-            let body = build_bytes!(b"!> tmpl standard.html\n\
+        prepare!(req, host, path, _addr {
+            let body = build_bytes!(
+                b"!> tmpl standard.html\n\
             [head]\
             [dependencies]\
             [close-head]\
             [navigation]\
             <main style='text-align: center;'><h1>You are visiting: '",
-            req.uri().path().as_bytes(),
-            b"'.</h1>Well, hope you enjoy <a href='/'>my site</a>!</main>"
-        );
-            (Response::new(body), ClientCachePreference::Full, ServerCachePreference::None, CompressPreference::Full)
+                req.uri().path().as_bytes(),
+                b"'.</h1>Well, hope you enjoy <a href='/'>my site</a>!</main>"
+            );
+            (
+                Response::new(body),
+                ClientCachePreference::Full,
+                ServerCachePreference::None,
+                CompressPreference::Full,
+            )
         }),
     );
 
