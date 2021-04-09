@@ -9,5 +9,4 @@ For now, I suggest forking this repo and tweaking it to your liking.
 
 # Future
 
-I plan to add support for a config file so you do *not* have to recomplie the binary every time you want to support a new domain.
-Though, focus for now lies on **Kvarn v0.2.0**
+I plan to add support for a config file so you do *not* have to recompile the binary every time you want to support a new domain.

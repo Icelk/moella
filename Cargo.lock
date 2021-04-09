@@ -384,7 +384,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "brotli",
  "bytes",
@@ -402,7 +402,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn_extensions"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fastcgi-client",
  "kvarn",
@@ -670,7 +670,7 @@ dependencies = [
 
 [[package]]
 name = "production_server"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "env_logger",
  "futures",
