@@ -1,5 +1,4 @@
 use kvarn::prelude::*;
-use kvarn_extensions;
 
 #[cfg_attr(feature = "mt", tokio::main)]
 #[cfg_attr(not(feature = "mt"), tokio::main(flavor = "current_thread"))]
@@ -144,7 +143,7 @@ async fn main() {
             // Commands in console
             for line in stdin().lock().lines() {
                 if let Ok(line) = line {
-                    let mut words = line.split(" ");
+                    let mut words = line.split(' ');
                     if let Some(command) = words.next() {
                         match command {
                             "fcc" => {
@@ -181,12 +180,10 @@ async fn main() {
 
                                 if !found {
                                     println!("Did not found host to remove cached item from. Use 'default' or an empty string (e.g. '') for the default host.");
+                                } else if !cleared {
+                                    println!("Did not remove any cached response.");
                                 } else {
-                                    if !cleared {
-                                        println!("Did not remove any cached response.");
-                                    } else {
-                                        println!("Cleared a cached response.");
-                                    }
+                                    println!("Cleared a cached response.");
                                 }
                             }
                             "cfc" => {
