@@ -87,10 +87,10 @@ async fn main() {
         Host::no_certification("kvarn.org", PathBuf::from("kvarn.org"), kvarn_extensions);
 
     #[cfg(feature = "https")]
-    let hosts = HostData::builder(icelk_host).add_host(kvarn_host).build();
+    let hosts = Data::builder(icelk_host).add_host(kvarn_host).build();
 
     #[cfg(not(feature = "https"))]
-    let hosts = HostData::builder(kvarn_host).build();
+    let hosts = Data::builder(kvarn_host).build();
 
     #[cfg(not(feature = "high_ports"))]
     let http_port = 80;
@@ -112,7 +112,7 @@ async fn main() {
 
     #[cfg(feature = "https")]
     if hosts.has_secure() {
-        let mut config = HostData::make_config(&hosts);
+        let mut config = Data::make_config(&hosts);
         config.alpn_protocols = kvarn::alpn();
         let config = Arc::new(config);
         ports.push(kvarn::HostDescriptor::new(
