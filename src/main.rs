@@ -102,31 +102,20 @@ async fn main() {
 
     let mut ports = Vec::with_capacity(2);
 
-    ports.push(kvarn::HostDescriptor::new(
+    ports.push(kvarn::PortDescriptor::non_secure(
         http_port,
         Arc::clone(&hosts),
-        #[cfg(feature = "https")]
-        None,
     ));
 
     #[cfg(feature = "https")]
     if hosts.has_secure() {
-        let mut config = Data::make_config(&hosts);
-        config.alpn_protocols = kvarn::alpn();
-        let config = Arc::new(config);
-        ports.push(kvarn::HostDescriptor::new(
-            https_port,
-            Arc::clone(&hosts),
-            Some(config),
-        ));
+        ports.push(kvarn::PortDescriptor::new(https_port, Arc::clone(&hosts)));
     }
 
-    let server = Config::new(ports);
-
     #[cfg(feature = "interactive")]
-    tokio::spawn(async move { server.run().await });
+    tokio::spawn(async move { run(ports).await });
     #[cfg(not(feature = "interactive"))]
-    server.run().await;
+    run(ports).await;
 
     #[cfg(feature = "interactive")]
     {
