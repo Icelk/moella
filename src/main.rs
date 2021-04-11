@@ -82,8 +82,7 @@ async fn main() {
         kvarn_extensions,
     );
     #[cfg(not(feature = "https"))]
-    let kvarn_host =
-        Host::no_certification("kvarn.org", PathBuf::from("kvarn.org"), kvarn_extensions);
+    let kvarn_host = Host::non_secure("kvarn.org", PathBuf::from("kvarn.org"), kvarn_extensions);
 
     #[cfg(feature = "https")]
     let hosts = Data::builder(icelk_host).add_host(kvarn_host).build();
