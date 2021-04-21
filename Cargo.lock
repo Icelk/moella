@@ -144,7 +144,7 @@ dependencies = [
 [[package]]
 name = "fastcgi-client"
 version = "0.6.1"
-source = "git+https://github.com/Iselk/fastcgi-client-rs#9a515bf96a9e92d64578a2645df289fa75bcecd9"
+source = "git+https://github.com/Icelk/fastcgi-client-rs#9a515bf96a9e92d64578a2645df289fa75bcecd9"
 dependencies = [
  "http",
  "log",
