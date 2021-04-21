@@ -38,7 +38,7 @@ async fn main() {
     icelk_extensions.add_prepare_single(
         "/throw_500".to_string(),
         prepare!(_req, host, _path, _addr {
-            utility::default_error_response(StatusCode::INTERNAL_SERVER_ERROR, host).await
+            utility::default_error_response(StatusCode::INTERNAL_SERVER_ERROR, host, None).await
         }),
     );
     icelk_extensions.add_prepare_fn(
