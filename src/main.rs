@@ -27,12 +27,7 @@ async fn main() {
             // It must be OK; we haven't changed the response
             let response = Response::new(body);
 
-            (
-                response,
-                ClientCachePreference::None,
-                ServerCachePreference::None,
-                CompressPreference::Full,
-            )
+            FatResponse::no_cache(response)
         }),
     );
     icelk_extensions.add_prepare_single(
@@ -54,11 +49,9 @@ async fn main() {
                 req.uri().path().as_bytes(),
                 b"'.</h1>Well, hope you enjoy <a href='/'>my site</a>!</main>"
             );
-            (
+            FatResponse::new(
                 Response::new(body),
-                ClientCachePreference::Full,
                 ServerCachePreference::None,
-                CompressPreference::Full,
             )
         }),
     );
