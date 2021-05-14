@@ -12,7 +12,7 @@ async fn main() {
     let times_called = Arc::new(threading::atomic::AtomicUsize::new(0));
     icelk_extensions.add_prepare_single(
         "/test".to_string(),
-        prepare!(request, host, path, addr, move |times_called| {
+        prepare!(request, _host, _path, _addr, move |times_called| {
             let tc = times_called;
             let tc = tc.fetch_add(1, threading::atomic::Ordering::Relaxed);
 
@@ -38,7 +38,7 @@ async fn main() {
     );
     icelk_extensions.add_prepare_fn(
         Box::new(|req| req.uri().path().starts_with("/capturing/")),
-        prepare!(req, host, path, _addr {
+        prepare!(req, _host, _path, _addr {
             let body = build_bytes!(
                 b"!> tmpl standard.html\n\
             [head]\
@@ -122,73 +122,69 @@ async fn main() {
             }
 
             // Commands in console
-            for line in stdin().lock().lines() {
-                if let Ok(line) = line {
-                    let mut words = line.split(' ');
-                    if let Some(command) = words.next() {
-                        match command {
-                            "fcc" => {
-                                // File cache clear
-                                match block_on(
-                                    hosts.clear_file_in_cache(&Path::new(
-                                        words.next().unwrap_or(&""),
-                                    )),
-                                ) {
-                                    true => println!("Removed item from cache!"),
-                                    false => println!("No item to remove"),
-                                }
-                            }
-                            "rcc" => {
-                                // Response cache clear
-                                let host = match words.next() {
-                                    Some(word) => word,
-                                    None => {
-                                        println!("Please enter a host to clear cache in.");
-                                        continue;
-                                    }
-                                };
-                                let uri = match Uri::builder()
-                                    .path_and_query(words.next().unwrap_or(&""))
-                                    .build()
-                                {
-                                    Ok(uri) => uri,
-                                    Err(..) => {
-                                        eprintln!("Failed to format path");
-                                        continue;
-                                    }
-                                };
-                                let (cleared, found) = block_on(hosts.clear_page(host, &uri));
-
-                                if !found {
-                                    println!("Did not found host to remove cached item from. Use 'default' or an empty string (e.g. '') for the default host.");
-                                } else if !cleared {
-                                    println!("Did not remove any cached response.");
-                                } else {
-                                    println!("Cleared a cached response.");
-                                }
-                            }
-                            "cfc" => {
-                                block_on(hosts.clear_file_caches());
-                                println!("Cleared file system cache!");
-                            }
-                            "crc" => {
-                                block_on(hosts.clear_response_caches());
-                                println!("Cleared whole response cache.",);
-                            }
-                            "cc" => {
-                                let hosts = hosts.clone();
-                                block_on(async move {
-                                    hosts.clear_response_caches().await;
-                                    hosts.clear_file_caches().await
-                                });
-                                println!("Cleared all caches!");
-                            }
-                            _ => {
-                                eprintln!("Unknown command!");
+            for line in stdin().lock().lines().flatten() {
+                let mut words = line.split(' ');
+                if let Some(command) = words.next() {
+                    match command {
+                        "fcc" => {
+                            // File cache clear
+                            match block_on(
+                                hosts.clear_file_in_cache(&Path::new(words.next().unwrap_or(&""))),
+                            ) {
+                                true => println!("Removed item from cache!"),
+                                false => println!("No item to remove"),
                             }
                         }
+                        "rcc" => {
+                            // Response cache clear
+                            let host = match words.next() {
+                                Some(word) => word,
+                                None => {
+                                    println!("Please enter a host to clear cache in.");
+                                    continue;
+                                }
+                            };
+                            let uri = match Uri::builder()
+                                .path_and_query(words.next().unwrap_or(&""))
+                                .build()
+                            {
+                                Ok(uri) => uri,
+                                Err(..) => {
+                                    eprintln!("Failed to format path");
+                                    continue;
+                                }
+                            };
+                            let (cleared, found) = block_on(hosts.clear_page(host, &uri));
+
+                            if !found {
+                                println!("Did not found host to remove cached item from. Use 'default' or an empty string (e.g. '') for the default host.");
+                            } else if !cleared {
+                                println!("Did not remove any cached response.");
+                            } else {
+                                println!("Cleared a cached response.");
+                            }
+                        }
+                        "cfc" => {
+                            block_on(hosts.clear_file_caches());
+                            println!("Cleared file system cache!");
+                        }
+                        "crc" => {
+                            block_on(hosts.clear_response_caches());
+                            println!("Cleared whole response cache.",);
+                        }
+                        "cc" => {
+                            let hosts = hosts.clone();
+                            block_on(async move {
+                                hosts.clear_response_caches().await;
+                                hosts.clear_file_caches().await
+                            });
+                            println!("Cleared all caches!");
+                        }
+                        _ => {
+                            eprintln!("Unknown command!");
+                        }
                     }
-                };
+                }
             }
         });
         thread.join().unwrap();
