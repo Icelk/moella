@@ -101,10 +101,10 @@ async fn main() {
         ports.push(kvarn::PortDescriptor::new(https_port, Arc::clone(&hosts)));
     }
 
-    #[cfg(feature = "interactive")]
-    tokio::spawn(async move { run(ports).await });
+    let shutdown_manager = run(ports).await;
+
     #[cfg(not(feature = "interactive"))]
-    run(ports).await;
+    shutdown_manager.wait().await;
 
     #[cfg(feature = "interactive")]
     {
@@ -176,6 +176,15 @@ async fn main() {
                                 hosts.clear_file_caches().await
                             });
                             println!("Cleared all caches!");
+                        }
+                        "shutdown" | "sd" => {
+                            block_on(async {
+                                shutdown_manager.shutdown().await;
+                                shutdown_manager.wait().await;
+                                info!("Shutdown complete!");
+                            });
+                            info!("Breaking interactive loop.");
+                            break;
                         }
                         _ => {
                             eprintln!("Unknown command!");
