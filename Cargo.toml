@@ -7,8 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-kvarn = { path = "../", default-features = false }
-kvarn_extensions = { path = "../kvarn_extensions" }
+kvarn = { path = "../kvarn", default-features = false }
+kvarn_extensions = { path = "../kvarn/kvarn_extensions" }
 http = "^0.2"
 env_logger = "^0.8"
 tokio = { version = "^1", features = ["macros"] }

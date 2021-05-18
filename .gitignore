@@ -1,12 +1,2 @@
 /target
 *.pem
-*.dll
-*.exe
-
-icelk.dev
-kvarn.org
-
-# Binaries
-linux.tar.*
-macOS.tar.*
-windows.zip

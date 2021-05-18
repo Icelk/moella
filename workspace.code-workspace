@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"name": "icelk.dev",
+			"path": "../icelk.dev"
+		},
+		{
+			"name": "kvarn.org",
+			"path": "../kvarn.org"
+		},
+		{
+			"name": "Reference implementation",
+			"path": "./"
+		},
+		{
+			"name": "Main Server Lib",
+			"path": "../kvarn"
+		},
+	],
+}
