@@ -58,7 +58,7 @@ async fn main() {
         "icelk.dev",
         "icelk_cert.pem",
         "icelk_pk.pem",
-        PathBuf::from("icelk.dev"),
+        PathBuf::from("../icelk.dev"),
         icelk_extensions,
     );
     let kvarn_extensions = kvarn_extensions::new();
@@ -68,11 +68,11 @@ async fn main() {
         "kvarn.org",
         "kvarn_cert.pem",
         "kvarn_pk.pem",
-        PathBuf::from("kvarn.org"),
+        PathBuf::from("../kvarn.org"),
         kvarn_extensions,
     );
     #[cfg(not(feature = "https"))]
-    let kvarn_host = Host::non_secure("kvarn.org", PathBuf::from("kvarn.org"), kvarn_extensions);
+    let kvarn_host = Host::non_secure("kvarn.org", PathBuf::from("../kvarn.org"), kvarn_extensions);
 
     #[cfg(feature = "https")]
     let hosts = Data::builder(icelk_host).add_host(kvarn_host).build();
