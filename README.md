@@ -6,6 +6,11 @@ and will therefore not work with most configurations.
 
 For now, I suggest forking this repo and tweaking it to your liking.
 
+# Folder structure
+
+To get this example working, it is assumed you have the [Kvarn](https://github.com/Icelk/kvarn) library in `../kvarn`,
+the files for `icelk.dev` and `kvarn.org` in `../icelk.dev` and `../kvarn.org`, respectively.
+
 # Future
 
 I plan to add support for a config file so you do *not* have to recompile the binary every time you want to support a new domain.
