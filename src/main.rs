@@ -53,18 +53,29 @@ async fn main() {
         }),
     );
 
+    kvarn_extensions::force_cache(
+        &mut icelk_extensions,
+        &[
+            ("png", ClientCachePreference::Changing),
+            ("ico", ClientCachePreference::Full),
+            ("woff2", ClientCachePreference::Full),
+        ],
+    );
+
     #[cfg(feature = "https")]
-    let icelk_host = Host::with_http_redirect(
+    let mut icelk_host = Host::with_http_redirect(
         "icelk.dev",
         "icelk_cert.pem",
         "icelk_pk.pem",
         PathBuf::from("../icelk.dev"),
         icelk_extensions,
     );
+    #[cfg(feature = "https")]
+    icelk_host.disable_client_cache();
     let kvarn_extensions = kvarn_extensions::new();
 
     #[cfg(feature = "https")]
-    let kvarn_host = Host::with_http_redirect(
+    let mut kvarn_host = Host::with_http_redirect(
         "kvarn.org",
         "kvarn_cert.pem",
         "kvarn_pk.pem",
@@ -72,7 +83,10 @@ async fn main() {
         kvarn_extensions,
     );
     #[cfg(not(feature = "https"))]
-    let kvarn_host = Host::non_secure("kvarn.org", PathBuf::from("../kvarn.org"), kvarn_extensions);
+    let mut kvarn_host =
+        Host::non_secure("kvarn.org", PathBuf::from("../kvarn.org"), kvarn_extensions);
+
+    kvarn_host.disable_client_cache();
 
     #[cfg(feature = "https")]
     let hosts = Data::builder(icelk_host).add_host(kvarn_host).build();
