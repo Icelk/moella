@@ -51,6 +51,7 @@ async fn main() {
             );
             FatResponse::new(Response::new(body), ServerCachePreference::None)
         }),
+        0,
     );
 
     kvarn_extensions::force_cache(
