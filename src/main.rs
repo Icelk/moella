@@ -63,37 +63,62 @@ async fn main() {
         ],
     );
 
-    #[cfg(feature = "https")]
-    let mut icelk_host = Host::with_http_redirect(
-        "icelk.dev",
-        "icelk_cert.pem",
-        "icelk_pk.pem",
-        PathBuf::from("../icelk.dev"),
-        icelk_extensions,
-    );
-    #[cfg(feature = "https")]
+    let mut icelk_host = host_from_name("icelk.dev", "../icelk.dev/", icelk_extensions);
     icelk_host.disable_client_cache();
-    let kvarn_extensions = kvarn_extensions::new();
 
-    #[cfg(feature = "https")]
-    let mut kvarn_host = Host::with_http_redirect(
-        "kvarn.org",
-        "kvarn_cert.pem",
-        "kvarn_pk.pem",
-        PathBuf::from("../kvarn.org"),
-        kvarn_extensions,
+    let mut kvarn_extensions = kvarn_extensions::new();
+    kvarn_extensions::force_cache(
+        &mut kvarn_extensions,
+        &[
+            ("png", ClientCachePreference::Changing),
+            ("ico", ClientCachePreference::Changing),
+            ("woff2", ClientCachePreference::Full),
+            ("woff", ClientCachePreference::Full),
+            ("svg", ClientCachePreference::Changing),
+        ],
     );
-    #[cfg(not(feature = "https"))]
-    let mut kvarn_host =
-        Host::non_secure("kvarn.org", PathBuf::from("../kvarn.org"), kvarn_extensions);
+
+    let mut kvarn_host = host_from_name("kvarn.org", "../kvarn.org/", kvarn_extensions);
 
     kvarn_host.disable_client_cache();
 
-    #[cfg(feature = "https")]
-    let hosts = Data::builder(icelk_host).add_host(kvarn_host).build();
+    let mut kvarn_doc_extensions = Extensions::new();
 
-    #[cfg(not(feature = "https"))]
-    let hosts = Data::builder(kvarn_host).build();
+    kvarn_extensions::force_cache(
+        &mut kvarn_doc_extensions,
+        &[("html", ClientCachePreference::None)],
+    );
+
+    kvarn_doc_extensions.add_prepare_single("/index.html".to_owned(), prepare!(_req, _host, _path, _addr {
+        let response = Response::builder().status(StatusCode::PERMANENT_REDIRECT).header("location", "kvarn/").body(Bytes::new()).expect("we know this is ok.");
+        FatResponse::cache(response)
+    }));
+
+    let mut kvarn_doc_host = host_from_name(
+        "doc.kvarn.org",
+        "../kvarn/target/doc/",
+        kvarn_doc_extensions,
+    );
+
+    kvarn_doc_host
+        .disable_client_cache()
+        .options
+        .set_public_data_dir(".");
+
+    let host = std::env::args().nth(1);
+
+    let hosts = match host.as_deref() {
+        Some("--kvarn") => Data::builder(kvarn_host).build(),
+        Some("--kvarn-doc") => Data::builder(kvarn_doc_host).build(),
+        Some(_) => {
+            error!("Unsupported host specifier");
+            return;
+        }
+        _ => Data::builder(icelk_host)
+            .add_host(kvarn_host)
+            .add_host(kvarn_doc_host)
+            .build(),
+    };
 
     #[cfg(not(feature = "high_ports"))]
     let http_port = 80;
@@ -210,4 +235,57 @@ async fn main() {
         });
         thread.join().unwrap();
     }
+}
+
+fn host_from_name(name: &'static str, path: impl AsRef<Path>, extensions: Extensions) -> Host {
+    #[cfg(feature = "https")]
+    {
+        let cert_base = join(discard_last(name.split('.')), ".");
+        Host::with_http_redirect(
+            name,
+            format!("{}-cert.pem", &cert_base),
+            format!("{}-pk.pem", &cert_base),
+            path.as_ref().to_path_buf(),
+            extensions,
+            host::Options::default(),
+        )
+    }
+    #[cfg(not(feature = "https"))]
+    {
+        Host::non_secure(name, path, extensions)
+    }
+}
+
+#[repr(transparent)]
+pub struct DiscardLast<T, I: Iterator<Item = T>> {
+    iter: std::iter::Peekable<I>,
+}
+impl<T: Debug, I: Iterator<Item = T>> Iterator for DiscardLast<T, I> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.peek()?;
+        let next = self.iter.next();
+        self.iter.peek()?;
+        next
+    }
+}
+pub fn discard_last<T, I: Iterator<Item = T>>(iter: I) -> DiscardLast<T, I> {
+    DiscardLast {
+        iter: iter.peekable(),
+    }
+}
+
+pub fn join<T: AsRef<str>, I: Iterator<Item = T>>(iter: I, separator: &str) -> String {
+    let mut iter = iter.peekable();
+
+    let mut string = String::new();
+
+    while let Some(fragment) = iter.next() {
+        let fragment = fragment.as_ref();
+        string.push_str(fragment);
+        if iter.peek().is_some() {
+            string.push_str(separator);
+        }
+    }
+    string
 }
