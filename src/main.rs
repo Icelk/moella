@@ -57,9 +57,10 @@ async fn main() {
     kvarn_extensions::force_cache(
         &mut icelk_extensions,
         &[
-            ("png", ClientCachePreference::Changing),
-            ("ico", ClientCachePreference::Full),
-            ("woff2", ClientCachePreference::Full),
+            (".png", ClientCachePreference::Changing),
+            (".ico", ClientCachePreference::Full),
+            (".woff2", ClientCachePreference::Full),
+            ("/highlight.js/", ClientCachePreference::Full),
         ],
     );
 
@@ -70,11 +71,11 @@ async fn main() {
     kvarn_extensions::force_cache(
         &mut kvarn_extensions,
         &[
-            ("png", ClientCachePreference::Changing),
-            ("ico", ClientCachePreference::Changing),
-            ("woff2", ClientCachePreference::Full),
-            ("woff", ClientCachePreference::Full),
-            ("svg", ClientCachePreference::Changing),
+            (".png", ClientCachePreference::Changing),
+            (".woff2", ClientCachePreference::Full),
+            (".woff", ClientCachePreference::Full),
+            (".svg", ClientCachePreference::Changing),
+            ("/highlight.js/", ClientCachePreference::Full),
         ],
     );
 
@@ -100,10 +101,7 @@ async fn main() {
         kvarn_doc_extensions,
     );
 
-    kvarn_doc_host
-        .disable_client_cache()
-        .options
-        .set_public_data_dir(".");
+    kvarn_doc_host.options.set_public_data_dir(".");
 
     let host = std::env::args().nth(1);
 
