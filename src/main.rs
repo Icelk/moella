@@ -250,7 +250,7 @@ fn host_from_name(name: &'static str, path: impl AsRef<Path>, extensions: Extens
     }
     #[cfg(not(feature = "https"))]
     {
-        Host::non_secure(name, path, extensions)
+        Host::non_secure(name, path.as_ref().to_path_buf(), extensions, host::Options::default())
     }
 }
 
