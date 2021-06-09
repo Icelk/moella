@@ -9,6 +9,9 @@ async fn main() {
     // Mount all extensions to server
     let mut icelk_extensions = kvarn_extensions::new();
 
+    let cors = extensions::Cors::new().allow("/*", extensions::CorsAllowList::new().add_origin("https://icelk.dev").add_method(Method::PUT)).build();
+    icelk_extensions.add_cors(cors);
+
     let times_called = Arc::new(threading::atomic::AtomicUsize::new(0));
     icelk_extensions.add_prepare_single(
         "/test".to_string(),
@@ -37,7 +40,7 @@ async fn main() {
         }),
     );
     icelk_extensions.add_prepare_fn(
-        Box::new(|req| req.uri().path().starts_with("/capturing/")),
+        Box::new(|req, _| req.uri().path().starts_with("/capturing/")),
         prepare!(req, _host, _path, _addr {
             let body = build_bytes!(
                 b"!> tmpl standard.html\n\
