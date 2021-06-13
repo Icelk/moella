@@ -9,7 +9,14 @@ async fn main() {
     // Mount all extensions to server
     let mut icelk_extensions = kvarn_extensions::new();
 
-    let cors = extensions::Cors::new().allow("/*", extensions::CorsAllowList::new().add_origin("https://icelk.dev").add_method(Method::PUT)).build();
+    let cors = extensions::Cors::new()
+        .allow(
+            "/*",
+            extensions::CorsAllowList::new()
+                .add_origin("https://icelk.dev")
+                .add_method(Method::PUT),
+        )
+        .build();
     icelk_extensions.add_cors(cors);
 
     let times_called = Arc::new(threading::atomic::AtomicUsize::new(0));
@@ -253,7 +260,12 @@ fn host_from_name(name: &'static str, path: impl AsRef<Path>, extensions: Extens
     }
     #[cfg(not(feature = "https"))]
     {
-        Host::non_secure(name, path.as_ref().to_path_buf(), extensions, host::Options::default())
+        Host::non_secure(
+            name,
+            path.as_ref().to_path_buf(),
+            extensions,
+            host::Options::default(),
+        )
     }
 }
 
