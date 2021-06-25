@@ -414,12 +414,24 @@ dependencies = [
  "futures",
  "h2",
  "http",
+ "kvarn_async",
+ "kvarn_utils",
  "log",
  "mime",
  "mime_guess",
  "rustls",
  "tokio",
  "webpki",
+]
+
+[[package]]
+name = "kvarn_async"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "http",
+ "kvarn_utils",
+ "tokio",
 ]
 
 [[package]]
@@ -431,6 +443,15 @@ dependencies = [
  "kvarn",
  "tokio",
  "url_crawl",
+]
+
+[[package]]
+name = "kvarn_utils"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "http",
+ "log",
 ]
 
 [[package]]
