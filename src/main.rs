@@ -226,8 +226,8 @@ async fn main() {
                             println!("Cleared all caches!");
                         }
                         "shutdown" | "sd" => {
+                            shutdown_manager.shutdown();
                             block_on(async {
-                                shutdown_manager.shutdown().await;
                                 shutdown_manager.wait().await;
                                 info!("Shutdown complete!");
                             });
