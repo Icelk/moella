@@ -19,8 +19,7 @@ futures = "^0.3"
 
 [features]
 default = ["mt", "https", "interactive", "kvarn/default"]
-nc = ["kvarn/no-cache"]
-production = ["https", "kvarn/http2", "kvarn/mt", "kvarn/compression", "kvarn/fs", "kvarn/limiting"]
+production = ["https", "kvarn/all-http", "kvarn/mt", "kvarn/all-compression"]
 
 # Interactive program
 interactive = []
