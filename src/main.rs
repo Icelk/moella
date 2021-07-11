@@ -75,7 +75,7 @@ async fn main() {
     );
 
     let mut icelk_host = host_from_name("icelk.dev", "../icelk.dev/", icelk_extensions);
-    icelk_host.disable_client_cache();
+    icelk_host.disable_client_cache().disable_server_cache();
 
     let mut kvarn_extensions = kvarn_extensions::new();
     kvarn_extensions::force_cache(
@@ -91,7 +91,7 @@ async fn main() {
 
     let mut kvarn_host = host_from_name("kvarn.org", "../kvarn.org/", kvarn_extensions);
 
-    kvarn_host.disable_client_cache();
+    kvarn_host.disable_client_cache().disable_server_cache();
 
     let mut kvarn_doc_extensions = Extensions::new();
 
@@ -112,6 +112,7 @@ async fn main() {
     );
 
     kvarn_doc_host.options.set_public_data_dir(".");
+    kvarn_doc_host.disable_server_cache();
 
     let host = std::env::args().nth(1);
 
