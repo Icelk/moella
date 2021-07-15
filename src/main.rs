@@ -138,16 +138,16 @@ async fn main() {
     #[cfg(all(feature = "high_ports", feature = "https"))]
     let https_port = 8443;
 
-    let mut ports = Vec::with_capacity(2);
+    let mut ports = RunConfig::new();
 
-    ports.push(kvarn::PortDescriptor::non_secure(
+    ports = ports.add(kvarn::PortDescriptor::non_secure(
         http_port,
         Arc::clone(&hosts),
     ));
 
     #[cfg(feature = "https")]
     if hosts.has_secure() {
-        ports.push(kvarn::PortDescriptor::new(https_port, Arc::clone(&hosts)));
+        ports = ports.add(kvarn::PortDescriptor::new(https_port, Arc::clone(&hosts)));
     }
 
     let shutdown_manager = run(ports).await;
@@ -157,6 +157,13 @@ async fn main() {
 
     #[cfg(feature = "interactive")]
     {
+        let waiter = shutdown_manager.clone();
+        // Exit the application on shutdown.
+        tokio::spawn(async move {
+            waiter.wait().await;
+            info!("Shutdown complete. Exiting binary.");
+            std::process::exit(0);
+        });
         let thread = std::thread::spawn(move || {
             use futures::executor::block_on;
             use std::io::{prelude::*, stdin};
@@ -228,12 +235,6 @@ async fn main() {
                         }
                         "shutdown" | "sd" => {
                             shutdown_manager.shutdown();
-                            block_on(async {
-                                shutdown_manager.wait().await;
-                                info!("Shutdown complete!");
-                            });
-                            info!("Breaking interactive loop.");
-                            break;
                         }
                         _ => {
                             eprintln!("Unknown command!");
