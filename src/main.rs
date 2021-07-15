@@ -9,7 +9,7 @@ async fn main() {
     // Mount all extensions to server
     let mut icelk_extensions = kvarn_extensions::new();
 
-    let cors = extensions::Cors::new()
+    let icelk_cors = Cors::new()
         .allow(
             "/*",
             extensions::CorsAllowList::new()
@@ -17,7 +17,7 @@ async fn main() {
                 .add_method(Method::PUT),
         )
         .build();
-    icelk_extensions.add_cors(cors);
+    icelk_extensions.add_cors(icelk_cors);
 
     let times_called = Arc::new(threading::atomic::AtomicUsize::new(0));
     icelk_extensions.add_prepare_single(
@@ -88,6 +88,20 @@ async fn main() {
             ("/highlight.js/", ClientCachePreference::Full),
         ],
     );
+
+    let kvarn_cors = Cors::new()
+        .allow(
+            "/logo.svg",
+            CorsAllowList::new()
+                .add_origin("https://github.com")
+                .add_origin("https://doc.kvarn.org"),
+        )
+        .allow(
+            "/favicon.svg",
+            CorsAllowList::new().add_origin("https://doc.kvarn.org"),
+        )
+        .build();
+    kvarn_extensions.add_cors(kvarn_cors);
 
     let mut kvarn_host = host_from_name("kvarn.org", "../kvarn.org/", kvarn_extensions);
 
