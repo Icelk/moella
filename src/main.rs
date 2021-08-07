@@ -9,16 +9,6 @@ async fn main() {
     // Mount all extensions to server
     let mut icelk_extensions = kvarn_extensions::new();
 
-    let icelk_cors = Cors::new()
-        .allow(
-            "/*",
-            extensions::CorsAllowList::new()
-                .add_origin("https://icelk.dev")
-                .add_method(Method::PUT),
-        )
-        .build();
-    icelk_extensions.add_cors(icelk_cors);
-
     let times_called = Arc::new(threading::atomic::AtomicUsize::new(0));
     icelk_extensions.add_prepare_single(
         "/test".to_string(),
