@@ -11,7 +11,7 @@ async fn main() {
 
     let times_called = Arc::new(threading::atomic::AtomicUsize::new(0));
     icelk_extensions.add_prepare_single(
-        "/test".to_string(),
+        "/test",
         prepare!(request, _host, _path, _addr, move |times_called| {
             let tc = times_called;
             let tc = tc.fetch_add(1, threading::atomic::Ordering::Relaxed);
@@ -31,7 +31,7 @@ async fn main() {
         }),
     );
     icelk_extensions.add_prepare_single(
-        "/throw_500".to_string(),
+        "/throw_500",
         prepare!(_req, host, _path, _addr {
             default_error_response(StatusCode::INTERNAL_SERVER_ERROR, host, None).await
         }),
@@ -82,13 +82,14 @@ async fn main() {
     let kvarn_cors = Cors::new()
         .allow(
             "/logo.svg",
-            CorsAllowList::new()
+            CorsAllowList::new(time::Duration::from_secs(60 * 60 * 24 * 14))
                 .add_origin("https://github.com")
                 .add_origin("https://doc.kvarn.org"),
         )
         .allow(
             "/favicon.svg",
-            CorsAllowList::new().add_origin("https://doc.kvarn.org"),
+            CorsAllowList::new(time::Duration::from_secs(60 * 60 * 24 * 14))
+                .add_origin("https://doc.kvarn.org"),
         )
         .build();
     kvarn_extensions.add_cors(kvarn_cors);
