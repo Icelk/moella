@@ -80,18 +80,18 @@ async fn main() {
     );
 
     let kvarn_cors = Cors::new()
-        .allow(
+        .add(
             "/logo.svg",
             CorsAllowList::new(time::Duration::from_secs(60 * 60 * 24 * 14))
                 .add_origin("https://github.com")
                 .add_origin("https://doc.kvarn.org"),
         )
-        .allow(
+        .add(
             "/favicon.svg",
             CorsAllowList::new(time::Duration::from_secs(60 * 60 * 24 * 14))
                 .add_origin("https://doc.kvarn.org"),
         )
-        .build();
+        .arc();
     kvarn_extensions.add_cors(kvarn_cors);
 
     let mut kvarn_host = host_from_name("kvarn.org", "../kvarn.org/", kvarn_extensions);
