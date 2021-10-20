@@ -187,7 +187,7 @@ async fn main() {
                         "fcc" => {
                             // File cache clear
                             match block_on(
-                                hosts.clear_file_in_cache(&Path::new(words.next().unwrap_or(&""))),
+                                hosts.clear_file_in_cache(&Path::new(words.next().unwrap_or(""))),
                             ) {
                                 true => println!("Removed item from cache!"),
                                 false => println!("No item to remove"),
@@ -203,7 +203,7 @@ async fn main() {
                                 }
                             };
                             let uri = match Uri::builder()
-                                .path_and_query(words.next().unwrap_or(&""))
+                                .path_and_query(words.next().unwrap_or(""))
                                 .build()
                             {
                                 Ok(uri) => uri,
