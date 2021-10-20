@@ -145,14 +145,14 @@ async fn main() {
 
     let mut ports = RunConfig::new();
 
-    ports = ports.add(kvarn::PortDescriptor::non_secure(
+    ports = ports.bind(kvarn::PortDescriptor::non_secure(
         http_port,
         Arc::clone(&hosts),
     ));
 
     #[cfg(feature = "https")]
     if hosts.has_secure() {
-        ports = ports.add(kvarn::PortDescriptor::new(https_port, Arc::clone(&hosts)));
+        ports = ports.bind(kvarn::PortDescriptor::new(https_port, Arc::clone(&hosts)));
     }
 
     let shutdown_manager = run(ports).await;
