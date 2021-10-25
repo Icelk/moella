@@ -92,7 +92,7 @@ async fn main() {
                 .add_origin("https://doc.kvarn.org"),
         )
         .arc();
-    kvarn_extensions.add_cors(kvarn_cors);
+    kvarn_extensions.with_cors(kvarn_cors);
 
     let mut kvarn_host = host_from_name("kvarn.org", "../kvarn.org/", kvarn_extensions);
 
@@ -155,7 +155,7 @@ async fn main() {
         ports = ports.bind(kvarn::PortDescriptor::new(https_port, Arc::clone(&hosts)));
     }
 
-    let shutdown_manager = run(ports).await;
+    let shutdown_manager = ports.execute().await;
 
     #[cfg(not(feature = "interactive"))]
     shutdown_manager.wait().await;
@@ -256,7 +256,7 @@ fn host_from_name(name: &'static str, path: impl AsRef<Path>, extensions: Extens
     #[cfg(feature = "https")]
     {
         let cert_base = join(discard_last(name.split('.')), ".");
-        Host::with_http_redirect(
+        Host::http_redirect_or_unsecure(
             name,
             format!("{}-cert.pem", &cert_base),
             format!("{}-pk.pem", &cert_base),
