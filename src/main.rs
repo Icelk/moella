@@ -117,7 +117,17 @@ async fn main() {
     );
 
     kvarn_doc_host.options.set_public_data_dir(".");
-    kvarn_doc_host.disable_server_cache();
+    kvarn_doc_host.disable_server_cache().disable_client_cache();
+    kvarn_extensions::force_cache(
+        &mut kvarn_doc_host.extensions,
+        &[
+            (".woff2", ClientCachePreference::Full),
+            (".woff", ClientCachePreference::Full),
+            (".svg", ClientCachePreference::Changing),
+            (".js", ClientCachePreference::Changing),
+            (".css", ClientCachePreference::Changing),
+        ],
+    );
 
     let host = std::env::args().nth(1);
 
