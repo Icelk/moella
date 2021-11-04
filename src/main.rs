@@ -64,6 +64,15 @@ async fn main() {
         ],
     );
 
+    icelk_extensions.with_csp(
+        Csp::new()
+            .add(
+                "*",
+                CspRule::new().img_src(CspValueSet::default().uri("https://kvarn.org")),
+            )
+            .arc(),
+    );
+
     let mut icelk_host = host_from_name("icelk.dev", "../icelk.dev/", icelk_extensions);
     icelk_host.disable_client_cache().disable_server_cache();
 
@@ -109,6 +118,15 @@ async fn main() {
         let response = Response::builder().status(StatusCode::PERMANENT_REDIRECT).header("location", "kvarn/").body(Bytes::new()).expect("we know this is ok.");
         FatResponse::cache(response)
     }));
+
+    kvarn_doc_extensions.with_csp(
+        Csp::new()
+            .add(
+                "*",
+                CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org")),
+            )
+            .arc(),
+    );
 
     let mut kvarn_doc_host = host_from_name(
         "doc.kvarn.org",
