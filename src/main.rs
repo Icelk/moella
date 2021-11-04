@@ -132,15 +132,16 @@ async fn main() {
     let host = std::env::args().nth(1);
 
     let hosts = match host.as_deref() {
-        Some("--kvarn") => Data::builder(kvarn_host).build(),
-        Some("--kvarn-doc") => Data::builder(kvarn_doc_host).build(),
+        Some("--kvarn") => Data::builder().insert(kvarn_host).build(),
+        Some("--kvarn-doc") => Data::builder().insert(kvarn_doc_host).build(),
         Some(_) => {
             error!("Unsupported host specifier");
             return;
         }
-        _ => Data::builder(icelk_host)
-            .add_host(kvarn_host)
-            .add_host(kvarn_doc_host)
+        _ => Data::builder()
+            .insert(icelk_host)
+            .insert(kvarn_host)
+            .insert(kvarn_doc_host)
             .build(),
     };
 
@@ -155,7 +156,7 @@ async fn main() {
 
     let mut ports = RunConfig::new();
 
-    ports = ports.bind(kvarn::PortDescriptor::non_secure(
+    ports = ports.bind(kvarn::PortDescriptor::unsecure(
         http_port,
         Arc::clone(&hosts),
     ));
