@@ -1,14 +1,22 @@
 [package]
-name = "production_server"
-version = "0.2.0"
-authors = ["Icelk"]
+name = "kvarn-reference"
+version = "0.3.0"
+authors = ["Icelk <main@icelk.dev>"]
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+rust-version = "1.56"
+description = "An implementation of the Kvarn web server framework."
+readme = "README.md"
+homepage = "https://kvarn.org/"
+repository = "https://github.com/Icelk/kvarn-reference/"
+license = "Apache-2.0"
+keywords = ["web-server"]
+categories = ["web-programming", "web-programming::http-server", "command-line-utilities"]
 
 [dependencies]
 kvarn = { path = "../kvarn", default-features = false }
-kvarn_extensions = { path = "../kvarn/extensions" }
+# kvarn = { version = "^0.3", default-features = false }
+kvarn-extensions = { path = "../kvarn/extensions" }
+# kvarn-extensions = "^0.3"
 http = "^0.2"
 env_logger = "^0.8"
 tokio = { version = "^1", features = ["macros"] }
