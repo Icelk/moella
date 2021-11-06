@@ -203,10 +203,10 @@ async fn main() {
             use futures::executor::block_on;
             use std::io::{prelude::*, stdin};
 
-            // Start `kvarn_chute`
-            match std::process::Command::new("kvarn_chute").arg("../").spawn() {
-                Ok(_child) => println!("Successfully started 'kvarn_chute!'"),
-                Err(_) => eprintln!("Failed to start 'kvarn_chute'."),
+            // Start `kvarn-chute`
+            match std::process::Command::new("kvarn-chute").arg("../").spawn() {
+                Ok(_child) => println!("Successfully started 'kvarn-chute!'"),
+                Err(_) => eprintln!("Failed to start 'kvarn-chute'."),
             }
 
             // Commands in console
