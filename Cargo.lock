@@ -166,17 +166,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fastcgi-client"
-version = "0.6.1"
-source = "git+https://github.com/Icelk/fastcgi-client-rs#9a515bf96a9e92d64578a2645df289fa75bcecd9"
-dependencies = [
- "http",
- "log",
- "thiserror",
- "tokio",
-]
-
-[[package]]
 name = "flate2"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -410,7 +399,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "brotli",
  "bytes",
@@ -432,8 +421,44 @@ dependencies = [
 ]
 
 [[package]]
-name = "kvarn_async"
+name = "kvarn-extensions"
+version = "0.3.0"
+dependencies = [
+ "async_chunked_transfer",
+ "kvarn",
+ "kvarn-fastcgi-client",
+ "tokio",
+ "url-crawl",
+]
+
+[[package]]
+name = "kvarn-fastcgi-client"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e12840c02d91c52f104e54ddcb29c46c1e5cd15eb6a887b6cdeba4b95201e7b0"
+dependencies = [
+ "http",
+ "log",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "kvarn-reference"
+version = "0.3.0"
+dependencies = [
+ "env_logger",
+ "futures",
+ "http",
+ "kvarn",
+ "kvarn-extensions",
+ "log",
+ "tokio",
+]
+
+[[package]]
+name = "kvarn_async"
+version = "0.3.0"
 dependencies = [
  "bytes",
  "http",
@@ -442,19 +467,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "kvarn_extensions"
-version = "0.2.0"
-dependencies = [
- "async_chunked_transfer",
- "fastcgi-client",
- "kvarn",
- "tokio",
- "url_crawl",
-]
-
-[[package]]
 name = "kvarn_utils"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "bytes",
  "http",
@@ -739,19 +753,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a152013215dca273577e18d2bf00fa862b89b24169fb78c4c95aeb07992c9cec"
 dependencies = [
  "unicode-xid",
-]
-
-[[package]]
-name = "production_server"
-version = "0.2.0"
-dependencies = [
- "env_logger",
- "futures",
- "http",
- "kvarn",
- "kvarn_extensions",
- "log",
- "tokio",
 ]
 
 [[package]]
@@ -1105,8 +1106,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
-name = "url_crawl"
+name = "url-crawl"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "531509e7a6fc8e4d95d9d3fa98dd327607ba5bd66df996a51175c59f33e83f0e"
 dependencies = [
  "select",
 ]
