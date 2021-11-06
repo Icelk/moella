@@ -112,7 +112,7 @@ async fn main() {
 
     kvarn_extensions::force_cache(
         &mut kvarn_doc_extensions,
-        &[("html", ClientCachePreference::None)],
+        &[(".html", ClientCachePreference::None)],
     );
 
     kvarn_doc_extensions.add_prepare_single("/index.html".to_owned(), prepare!(_req, _host, _path, _addr {
