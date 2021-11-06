@@ -1,3 +1,4 @@
+use comprash::ClientCachePreference;
 use kvarn::prelude::*;
 
 #[cfg_attr(feature = "mt", tokio::main)]
@@ -49,7 +50,7 @@ async fn main() {
                 req.uri().path().as_bytes(),
                 b"'.</h1>Well, hope you enjoy <a href='/'>my site</a>!</main>"
             );
-            FatResponse::new(Response::new(body), ServerCachePreference::None)
+            FatResponse::new(Response::new(body), comprash::ServerCachePreference::None)
         }),
         extensions::Id::without_name(0),
     );
