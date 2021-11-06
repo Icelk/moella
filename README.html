@@ -1,0 +1,18 @@
+!> tmpl standard.html markdown.html
+[head][dependencies][md-imports][close-head][navigation]
+<main><md><h1 id="kvarn-reference-binary">Kvarn reference binary</h1>
+<p>This is a reference implementation of the Kvarn server library.
+It’s for my personal use for my domains <a href="https://icelk.dev/">icelk.dev</a> and <a href="https://kvarn.org/">kvarn.org</a>
+and will therefore not work with most configurations.</p>
+<p>For now, I suggest forking this repo and tweaking it to your liking.</p>
+<h2 id="installation">Installation</h2>
+<p>If you really want to install it, you can run the following.</p>
+<pre><code class="language-shell">$ cargo install kvarn-reference
+</code></pre>
+<h1 id="folder-structure">Folder structure</h1>
+<p>To get this example working, it is assumed you have the <a href="https://github.com/Icelk/kvarn">Kvarn</a> library in <code>../kvarn</code>,
+the files for <code>icelk.dev</code> and <code>kvarn.org</code> in <code>../icelk.dev</code> and <code>../kvarn.org</code>, respectively.</p>
+<h1 id="future">Future</h1>
+<p>I plan to add support for a <a href="https://kvarn.org/config/">config file</a> so you do <em>not</em> have to recompile the binary every time you want to support a new domain.</p>
+</md></main>
+[footer]
