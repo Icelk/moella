@@ -13,10 +13,10 @@ keywords = ["web-server"]
 categories = ["web-programming", "web-programming::http-server", "command-line-utilities"]
 
 [dependencies]
-# kvarn = { path = "../kvarn", default-features = false }
-kvarn = { version = "^0.3", default-features = false }
-# kvarn-extensions = { path = "../kvarn/extensions" }
-kvarn-extensions = "^0.3"
+kvarn = { path = "../kvarn", default-features = false }
+# kvarn = { version = "^0.3", default-features = false }
+kvarn-extensions = { path = "../kvarn/extensions" }
+# kvarn-extensions = "^0.3"
 http = "^0.2"
 env_logger = "^0.8"
 tokio = { version = "^1", features = ["macros"] }
