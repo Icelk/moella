@@ -204,10 +204,16 @@ async fn main() {
             use std::io::{prelude::*, stdin};
 
             // Start `kvarn-chute`
-            match std::process::Command::new("kvarn-chute").arg("../").spawn() {
-                Ok(_child) => println!("Successfully started 'kvarn-chute!'"),
-                Err(_) => eprintln!("Failed to start 'kvarn-chute'."),
-            }
+            let mut child = match std::process::Command::new("kvarn-chute").arg("../").spawn() {
+                Ok(child) => {
+                    println!("Successfully started 'kvarn-chute!'");
+                    Some(child)
+                }
+                Err(_) => {
+                    eprintln!("Failed to start 'kvarn-chute'.");
+                    None
+                }
+            };
 
             // Commands in console
             for line in stdin().lock().lines().flatten() {
@@ -270,6 +276,9 @@ async fn main() {
                         }
                         "shutdown" | "sd" => {
                             shutdown_manager.shutdown();
+                            if let Some(child) = &mut child {
+                                drop(child.kill());
+                            }
                         }
                         _ => {
                             eprintln!("Unknown command!");
