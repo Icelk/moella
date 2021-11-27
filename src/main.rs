@@ -1,5 +1,6 @@
-use comprash::ClientCachePreference;
 use kvarn::prelude::*;
+
+pub mod hosts;
 
 #[cfg_attr(feature = "mt", tokio::main)]
 #[cfg_attr(not(feature = "mt"), tokio::main(flavor = "current_thread"))]
@@ -7,152 +8,17 @@ async fn main() {
     let env_log = env_logger::Env::default().default_filter_or("rustls=off,warn");
     env_logger::Builder::from_env(env_log).init();
 
-    // Mount all extensions to server
-    let mut icelk_extensions = kvarn_extensions::new();
-
-    let times_called = Arc::new(threading::atomic::AtomicUsize::new(0));
-    icelk_extensions.add_prepare_single(
-        "/test",
-        prepare!(request, _host, _path, _addr, move |times_called| {
-            let tc = times_called;
-            let tc = tc.fetch_add(1, threading::atomic::Ordering::Relaxed);
-
-            let body = build_bytes!(
-                b"<h1>Welcome to my site!</h1> You are calling: ",
-                request.uri().path().as_bytes(),
-                b" for the ",
-                tc.to_string().as_bytes(),
-                b" time",
-            );
-
-            // It must be OK; we haven't changed the response
-            let response = Response::new(body);
-
-            FatResponse::no_cache(response)
-        }),
-    );
-    icelk_extensions.add_prepare_single(
-        "/throw_500",
-        prepare!(_req, host, _path, _addr {
-            default_error_response(StatusCode::INTERNAL_SERVER_ERROR, host, None).await
-        }),
-    );
-    icelk_extensions.add_prepare_fn(
-        Box::new(|req, _| req.uri().path().starts_with("/capturing/")),
-        prepare!(req, _host, _path, _addr {
-            let body = build_bytes!(
-                b"!> tmpl standard.html\n\
-            [head]\
-            [dependencies]\
-            [close-head]\
-            [navigation]\
-            <main style='text-align: center;'><h1>You are visiting: '",
-                req.uri().path().as_bytes(),
-                b"'.</h1>Well, hope you enjoy <a href='/'>my site</a>!</main>"
-            );
-            FatResponse::new(Response::new(body), comprash::ServerCachePreference::None)
-        }),
-        extensions::Id::without_name(0),
-    );
-
-    kvarn_extensions::force_cache(
-        &mut icelk_extensions,
-        &[
-            (".png", ClientCachePreference::Changing),
-            (".ico", ClientCachePreference::Full),
-            (".woff2", ClientCachePreference::Full),
-            ("/highlight.js/", ClientCachePreference::Full),
-        ],
-    );
-
-    icelk_extensions.with_csp(
-        Csp::new()
-            .add(
-                "*",
-                CspRule::new().img_src(CspValueSet::default().uri("https://kvarn.org")),
-            )
-            .arc(),
-    );
-
-    let mut icelk_host = host_from_name("icelk.dev", "../icelk.dev/", icelk_extensions);
-    icelk_host.disable_client_cache().disable_server_cache();
-
-    let mut kvarn_extensions = kvarn_extensions::new();
-    kvarn_extensions::force_cache(
-        &mut kvarn_extensions,
-        &[
-            (".png", ClientCachePreference::Changing),
-            (".woff2", ClientCachePreference::Full),
-            (".woff", ClientCachePreference::Full),
-            (".svg", ClientCachePreference::Changing),
-            ("/highlight.js/", ClientCachePreference::Full),
-        ],
-    );
-
-    let kvarn_cors = Cors::new()
-        .add(
-            "/logo.svg",
-            CorsAllowList::new(time::Duration::from_secs(60 * 60 * 24 * 14))
-                .add_origin("https://github.com")
-                .add_origin("https://doc.kvarn.org"),
-        )
-        .add(
-            "/favicon.svg",
-            CorsAllowList::new(time::Duration::from_secs(60 * 60 * 24 * 14))
-                .add_origin("https://doc.kvarn.org"),
-        )
-        .arc();
-    kvarn_extensions.with_cors(kvarn_cors);
-
-    let mut kvarn_host = host_from_name("kvarn.org", "../kvarn.org/", kvarn_extensions);
-
-    kvarn_host.disable_client_cache().disable_server_cache();
-
-    let mut kvarn_doc_extensions = Extensions::new();
-
-    kvarn_extensions::force_cache(
-        &mut kvarn_doc_extensions,
-        &[(".html", ClientCachePreference::None)],
-    );
-
-    kvarn_doc_extensions.add_prepare_single("/index.html".to_owned(), prepare!(_req, _host, _path, _addr {
-        let response = Response::builder().status(StatusCode::PERMANENT_REDIRECT).header("location", "kvarn/").body(Bytes::new()).expect("we know this is ok.");
-        FatResponse::cache(response)
-    }));
-
-    kvarn_doc_extensions.with_csp(
-        Csp::new()
-            .add(
-                "*",
-                CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org")),
-            )
-            .arc(),
-    );
-
-    let mut kvarn_doc_host = host_from_name(
-        "doc.kvarn.org",
-        "../kvarn/target/doc/",
-        kvarn_doc_extensions,
-    );
-
-    kvarn_doc_host.options.set_public_data_dir(".");
-    kvarn_doc_host.disable_server_cache().disable_client_cache();
-    kvarn_extensions::force_cache(
-        &mut kvarn_doc_host.extensions,
-        &[
-            (".woff2", ClientCachePreference::Full),
-            (".woff", ClientCachePreference::Full),
-            (".svg", ClientCachePreference::Changing),
-            (".js", ClientCachePreference::Changing),
-            (".css", ClientCachePreference::Changing),
-        ],
-    );
+    let icelk_host = hosts::icelk(hosts::icelk_extensions());
+    let kvarn_host = hosts::kvarn(hosts::kvarn_extensions());
+    let kvarn_doc_host = hosts::kvarn_doc(hosts::kvarn_doc_extensions());
+    let agde_host = hosts::agde(hosts::kvarn_extensions());
 
     let host = std::env::args().nth(1);
 
-    let hosts = match host.as_deref() {
-        Some("--kvarn") => Data::builder().insert(kvarn_host).build(),
-        Some("--kvarn-doc") => Data::builder().insert(kvarn_doc_host).build(),
+    let mut hosts = match host.as_deref() {
+        Some("--kvarn") => Data::builder().insert(kvarn_host),
+        Some("--kvarn-doc") => Data::builder().insert(kvarn_doc_host),
+        Some("--agde") => Data::builder().insert(agde_host),
         Some(_) => {
             error!("Unsupported host specifier");
             return;
@@ -160,9 +26,31 @@ async fn main() {
         _ => Data::builder()
             .insert(icelk_host)
             .insert(kvarn_host)
-            .insert(kvarn_doc_host)
-            .build(),
+            .insert(kvarn_doc_host),
     };
+
+    {
+        hosts = hosts.insert(Host::unsecure(
+            "mail.icelk.dev",
+            "mail",
+            Extensions::default(),
+            host::Options::default(),
+        ));
+        hosts = hosts.insert(Host::unsecure(
+            "mail.kvarn.org",
+            "mail",
+            Extensions::default(),
+            host::Options::default(),
+        ));
+        hosts = hosts.insert(Host::unsecure(
+            "mail.agde.dev",
+            "mail",
+            Extensions::default(),
+            host::Options::default(),
+        ));
+    }
+
+    let hosts = hosts.build();
 
     #[cfg(not(feature = "high_ports"))]
     let http_port = 80;
@@ -289,62 +177,4 @@ async fn main() {
         });
         thread.join().unwrap();
     }
-}
-
-fn host_from_name(name: &'static str, path: impl AsRef<Path>, extensions: Extensions) -> Host {
-    #[cfg(feature = "https")]
-    {
-        let cert_base = join(discard_last(name.split('.')), ".");
-        Host::http_redirect_or_unsecure(
-            name,
-            format!("{}-cert.pem", &cert_base),
-            format!("{}-pk.pem", &cert_base),
-            path.as_ref().to_path_buf(),
-            extensions,
-            host::Options::default(),
-        )
-    }
-    #[cfg(not(feature = "https"))]
-    {
-        Host::non_secure(
-            name,
-            path.as_ref().to_path_buf(),
-            extensions,
-            host::Options::default(),
-        )
-    }
-}
-
-#[repr(transparent)]
-pub struct DiscardLast<T, I: Iterator<Item = T>> {
-    iter: std::iter::Peekable<I>,
-}
-impl<T: Debug, I: Iterator<Item = T>> Iterator for DiscardLast<T, I> {
-    type Item = T;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.peek()?;
-        let next = self.iter.next();
-        self.iter.peek()?;
-        next
-    }
-}
-pub fn discard_last<T, I: Iterator<Item = T>>(iter: I) -> DiscardLast<T, I> {
-    DiscardLast {
-        iter: iter.peekable(),
-    }
-}
-
-pub fn join<T: AsRef<str>, I: Iterator<Item = T>>(iter: I, separator: &str) -> String {
-    let mut iter = iter.peekable();
-
-    let mut string = String::new();
-
-    while let Some(fragment) = iter.next() {
-        let fragment = fragment.as_ref();
-        string.push_str(fragment);
-        if iter.peek().is_some() {
-            string.push_str(separator);
-        }
-    }
-    string
 }
