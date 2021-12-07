@@ -64,7 +64,7 @@ pub fn icelk_extensions() -> Extensions {
         Csp::new()
             .add(
                 "*",
-                CspRule::new().img_src(CspValueSet::default().uri("https://kvarn.org")),
+                CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org")),
             )
             .arc(),
     );
