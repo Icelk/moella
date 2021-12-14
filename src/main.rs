@@ -26,7 +26,8 @@ async fn main() {
         _ => Data::builder()
             .insert(icelk_host)
             .insert(kvarn_host)
-            .insert(kvarn_doc_host),
+            .insert(kvarn_doc_host)
+            .insert(agde_host),
     };
 
     {
