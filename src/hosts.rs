@@ -152,7 +152,25 @@ pub fn kvarn_doc(extensions: Extensions) -> Host {
 
     kvarn_doc_host
 }
-pub fn agde(extensions: Extensions) -> Host {
+pub fn agde(mut extensions: Extensions) -> Host {
+    const FALLBACK: &str = "<html>
+    <head><title>agde website - check GitHub</title></head>
+    <body><p>Check out <a href=\"https://github.com/Icelk/agde\">GitHub</a></p></body>
+    </html>";
+    extensions.add_prepare_fn(
+        Box::new(|_, _| true),
+        prepare!(_req, _host, _path, _addr {
+            FatResponse::no_cache(
+                Response::builder()
+                    .status(StatusCode::TEMPORARY_REDIRECT)
+                    .header("location", "https://github.com/Icelk/agde/")
+                    .body(Bytes::from_static(FALLBACK.as_bytes())).unwrap())
+                .with_server_cache(comprash::ServerCachePreference::Full)
+        }
+        ),
+        Id::new(0, "redirect to GitHub"),
+    );
+
     let mut host = host_from_name("agde.dev", "../agde.dev/", extensions);
 
     host.disable_client_cache().disable_server_cache();
