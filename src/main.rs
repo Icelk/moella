@@ -16,9 +16,10 @@ async fn main() {
     let host = std::env::args().nth(1);
 
     let mut hosts = match host.as_deref() {
-        Some("--kvarn") => Data::builder().insert(kvarn_host),
-        Some("--kvarn-doc") => Data::builder().insert(kvarn_doc_host),
-        Some("--agde") => Data::builder().insert(agde_host),
+        Some("--icelk") => Data::builder().default(icelk_host),
+        Some("--kvarn") => Data::builder().default(kvarn_host),
+        Some("--kvarn-doc") => Data::builder().default(kvarn_doc_host),
+        Some("--agde") => Data::builder().default(agde_host),
         Some(_) => {
             error!("Unsupported host specifier");
             return;
