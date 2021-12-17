@@ -66,6 +66,10 @@ pub fn icelk_extensions() -> Extensions {
                 "*",
                 CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org")),
             )
+            .add(
+                "/index.html",
+                CspRule::default().script_src(CspValueSet::default().unsafe_inline()),
+            )
             .arc(),
     );
 
