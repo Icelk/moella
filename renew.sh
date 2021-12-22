@@ -2,6 +2,8 @@
 
 # Here, I use the username `icelk` and have `server` configured the target IP in `/etc/hosts`
 
+ssh server "mkdir -p ~/kvarn/kvarn-reference/mail/public"
+
 # Renew and change permissions
 ssh root@server "certbot renew && chown icelk:icelk -R /etc/letsencrypt && chmod o-r,g-r -R /etc/letsencrypt"
 # Pull to local
