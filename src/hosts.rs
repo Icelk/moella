@@ -1,4 +1,5 @@
 use comprash::ClientCachePreference;
+use internals::mime;
 use kvarn::prelude::*;
 
 /// Bullshittery with some futures not being Sync.
@@ -117,6 +118,7 @@ pub fn icelk_extensions() -> Extensions {
 
             FatResponse::no_cache(Response::new(body))
                 .with_compress(comprash::CompressPreference::None)
+                .with_content_type(&mime::TEXT_PLAIN)
         }),
     );
 
@@ -171,13 +173,17 @@ pub fn icelk_extensions() -> Extensions {
                     .await;
                 };
 
-                FatResponse::no_cache(Response::new(result.into())).with_compress(comprash::CompressPreference::None)
+                FatResponse::no_cache(Response::new(result.into()))
+                    .with_compress(comprash::CompressPreference::None)
+                    .with_content_type(&mime::TEXT_PLAIN)
         }),
     );
     extensions.add_prepare_single(
         "/ip",
         prepare!(_req, _host, _path, addr {
-            FatResponse::no_cache(Response::new(addr.ip().to_string().into())).with_compress(comprash::CompressPreference::None)
+            FatResponse::no_cache(Response::new(addr.ip().to_string().into()))
+                .with_compress(comprash::CompressPreference::None)
+                .with_content_type(&mime::TEXT_PLAIN)
         }),
     );
 
