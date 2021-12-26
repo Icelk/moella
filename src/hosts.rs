@@ -116,6 +116,7 @@ pub fn icelk_extensions() -> Extensions {
             }
 
             FatResponse::no_cache(Response::new(body))
+                .with_compress(comprash::CompressPreference::None)
         }),
     );
 
@@ -169,13 +170,13 @@ pub fn icelk_extensions() -> Extensions {
                     .await;
                 };
 
-                FatResponse::no_cache(Response::new(result.into()))
+                FatResponse::no_cache(Response::new(result.into())).with_compress(comprash::CompressPreference::None)
         }),
     );
     extensions.add_prepare_single(
         "/ip",
         prepare!(_req, _host, _path, addr {
-            FatResponse::no_cache(Response::new(addr.ip().to_string().into()))
+            FatResponse::no_cache(Response::new(addr.ip().to_string().into())).with_compress(comprash::CompressPreference::None)
         }),
     );
 
