@@ -125,7 +125,7 @@ pub fn icelk_extensions() -> Extensions {
         prepare!(req, host, _path, _addr {
                 let queries = utils::parse::query(req.uri().query().unwrap_or(""));
 
-                let result = if let (Some(ip), Some(name)) = (queries.get("ip"), queries.get("name")){
+                let result = if let (Some(ip), Some(name)) = (queries.get("ip"), queries.get("name")) {
                     let ip = if let Ok(ip) = ip.value().parse() {
                         ip
                     } else {
@@ -155,17 +155,18 @@ pub fn icelk_extensions() -> Extensions {
                         let result = future.await;
                         if result.is_ok() {
                             "supported"
-                        }else {
+                        } else {
                             "unsupported"
                         }
-                    }else {
+                    } else {
                         return default_error_response(StatusCode::INTERNAL_SERVER_ERROR, host, Some("Creation of resolver failed.")).await;
                     }
-                }else {
+                } else {
                     return default_error_response(
                         StatusCode::BAD_REQUEST,
                         host,
-                        Some("there must be a `ip` key with a IP address as the value and a `name` with the corresponding host name as the value. It can have a `query-name` to specify which host name to test the look up with.")
+                        Some("there must be a `ip` key with a IP address as the value and a `name` with the corresponding host name as the value.\
+                             It can have a `query-name` to specify which host name to test the look up with.")
                     )
                     .await;
                 };
