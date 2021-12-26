@@ -34,51 +34,6 @@ pub fn icelk_extensions() -> Extensions {
     // Mount all extensions to server
     let mut extensions = kvarn_extensions::new();
 
-    let times_called = threading::atomic::AtomicUsize::new(0);
-    extensions.add_prepare_single(
-        "/test",
-        prepare!(request, _host, _path, _addr, move |times_called| {
-            let tc = times_called;
-            let tc = tc.fetch_add(1, threading::atomic::Ordering::Relaxed);
-
-            let body = build_bytes!(
-                b"<h1>Welcome to my site!</h1> You are calling: ",
-                request.uri().path().as_bytes(),
-                b" for the ",
-                tc.to_string().as_bytes(),
-                b" time",
-            );
-
-            // It must be OK; we haven't changed the response
-            let response = Response::new(body);
-
-            FatResponse::no_cache(response)
-        }),
-    );
-    extensions.add_prepare_single(
-        "/throw_500",
-        prepare!(_req, host, _path, _addr {
-            default_error_response(StatusCode::INTERNAL_SERVER_ERROR, host, None).await
-        }),
-    );
-    extensions.add_prepare_fn(
-        Box::new(|req, _| req.uri().path().starts_with("/capturing/")),
-        prepare!(req, _host, _path, _addr {
-            let body = build_bytes!(
-                b"!> tmpl standard.html\n\
-            [head]\
-            [dependencies]\
-            [close-head]\
-            [navigation]\
-            <main style='text-align: center;'><h1>You are visiting: '",
-                req.uri().path().as_bytes(),
-                b"'.</h1>Well, hope you enjoy <a href='/'>my site</a>!</main>"
-            );
-            FatResponse::new(Response::new(body), comprash::ServerCachePreference::None)
-        }),
-        extensions::Id::without_name(0),
-    );
-
     let resolver_opts = trust_dns_resolver::config::ResolverOpts {
         cache_size: 0,
         validate: false,
