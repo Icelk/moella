@@ -197,16 +197,16 @@ pub fn icelk_extensions() -> Extensions {
         ],
     );
 
+    let base_csp = CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org"));
     extensions.with_csp(
         Csp::new()
-            .add(
-                "*",
-                CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org")),
-            )
+            .add("*", base_csp.clone())
             .add(
                 "/index.html",
-                CspRule::default().script_src(CspValueSet::default().unsafe_inline()),
+                base_csp.script_src(CspValueSet::default().unsafe_inline()),
             )
+            .add("/api/*", CspRule::new())
+            .add("/ip", CspRule::new())
             .arc(),
     );
 
