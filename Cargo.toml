@@ -15,7 +15,7 @@ categories = ["web-programming", "web-programming::http-server", "command-line-u
 [dependencies]
 kvarn = { path = "../kvarn", default-features = false }
 # kvarn = { version = "^0.3", default-features = false }
-kvarn-extensions = { path = "../kvarn/extensions" }
+kvarn-extensions = { path = "../kvarn/extensions", features = ["reverse-proxy"] }
 # kvarn-extensions = "^0.3"
 http = "^0.2"
 env_logger = "^0.8"

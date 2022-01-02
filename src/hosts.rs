@@ -315,6 +315,57 @@ pub fn agde(mut extensions: Extensions) -> Host {
     host
 }
 
+pub fn icelk_bitwarden_extensions() -> Extensions {
+    let mut extensions = Extensions::empty();
+    let rev_proxy = kvarn_extensions::ReverseProxy::base(
+        "/",
+        kvarn_extensions::static_connection(kvarn_extensions::ReverseProxyConnection::Tcp(
+            kvarn_extensions::localhost(8000),
+        )),
+        time::Duration::from_secs(5),
+    );
+    rev_proxy.mount(&mut extensions);
+    kvarn_extensions::force_cache(
+        &mut extensions,
+        &[
+            (".html", ClientCachePreference::Changing),
+            (".woff2", ClientCachePreference::Full),
+            (".woff", ClientCachePreference::Full),
+            (".svg", ClientCachePreference::Changing),
+            (".js", ClientCachePreference::Changing),
+            (".css", ClientCachePreference::Changing),
+        ],
+    );
+
+    extensions.add_prepare_fn(
+        Box::new(|req, _| req.uri().path().starts_with("/.well-known")),
+        prepare!(req, host, _path, _addr {
+            let path = format!("/usr/share/webapps/vaultwarden-web{}", req.uri().path());
+            let file = read::file(&path, host.file_cache.as_ref()).await;
+            let file = if let Some(f) = file {
+                f
+            } else {
+                return default_error_response(StatusCode::NOT_FOUND, host, None).await;
+            };
+            FatResponse::no_cache(Response::new(file))
+        }),
+        Id::new(1000, "override Let's Encrypt path"),
+    );
+
+    extensions.with_csp(Csp::new().arc());
+
+    extensions
+}
+pub fn icelk_bitwarden(extensions: Extensions) -> Host {
+    let mut host = host_from_name(
+        "bitwarden.icelk.dev",
+        "/usr/share/webapps/vaultwarden-web",
+        extensions,
+    );
+    host.disable_server_cache().disable_client_cache();
+    host
+}
+
 fn host_from_name(name: &'static str, path: impl AsRef<Path>, extensions: Extensions) -> Host {
     #[cfg(feature = "https")]
     {

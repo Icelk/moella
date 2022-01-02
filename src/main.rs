@@ -12,6 +12,7 @@ async fn main() {
     let kvarn_host = hosts::kvarn(hosts::kvarn_extensions());
     let kvarn_doc_host = hosts::kvarn_doc(hosts::kvarn_doc_extensions());
     let agde_host = hosts::agde(hosts::kvarn_extensions());
+    let icelk_bitwarden_host = hosts::icelk_bitwarden(hosts::icelk_bitwarden_extensions());
 
     let host = std::env::args().nth(1);
 
@@ -20,6 +21,7 @@ async fn main() {
         Some("--kvarn") => HostCollection::builder().default(kvarn_host),
         Some("--kvarn-doc") => HostCollection::builder().default(kvarn_doc_host),
         Some("--agde") => HostCollection::builder().default(agde_host),
+        Some("--icelk-bitwarden") => HostCollection::builder().default(icelk_bitwarden_host),
         Some(_) => {
             error!("Unsupported host specifier");
             return;
@@ -28,7 +30,8 @@ async fn main() {
             .insert(icelk_host)
             .insert(kvarn_host)
             .insert(kvarn_doc_host)
-            .insert(agde_host),
+            .insert(agde_host)
+            .insert(icelk_bitwarden_host),
     };
 
     {
