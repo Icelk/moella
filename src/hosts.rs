@@ -331,6 +331,7 @@ pub fn icelk_bitwarden_extensions() -> Extensions {
             (".html", ClientCachePreference::Changing),
             (".woff2", ClientCachePreference::Full),
             (".woff", ClientCachePreference::Full),
+            (".png", ClientCachePreference::Full),
             (".svg", ClientCachePreference::Changing),
             (".js", ClientCachePreference::Changing),
             (".css", ClientCachePreference::Changing),
