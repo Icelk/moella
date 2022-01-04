@@ -5,7 +5,7 @@
 ssh server "mkdir -p ~/kvarn/kvarn-reference/mail/public"
 
 # Renew and change permissions
-ssh root@server "certbot renew && chown icelk:icelk -R /etc/letsencrypt && chmod o-r,g-r -R /etc/letsencrypt"
+ssh root@server "certbot renew && chown icelk:icelk -R /etc/letsencrypt && chmod o-r,g-r -R /etc/letsencrypt && cp /etc/letsencrypt/live/icelk.dev/fullchain.pem /etc/unbound/cert.pem && cp /etc/letsencrypt/live/icelk.dev/privkey.pem /etc/unbound/pk.pem"
 # Pull to local
 rsync -rPhL --del icelk@server:/etc/letsencrypt/live/ ~/.private/certs/
 # change permissions on local
