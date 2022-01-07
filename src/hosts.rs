@@ -319,7 +319,7 @@ pub fn icelk_bitwarden_extensions() -> Extensions {
     let mut extensions = Extensions::empty();
     let rev_proxy = kvarn_extensions::ReverseProxy::base(
         "/",
-        kvarn_extensions::static_connection(kvarn_extensions::ReverseProxyConnection::Tcp(
+        kvarn_extensions::static_connection(kvarn_extensions::Connection::Tcp(
             kvarn_extensions::localhost(8000),
         )),
         time::Duration::from_secs(15),
