@@ -521,9 +521,10 @@ dependencies = [
 
 [[package]]
 name = "kvarn-extensions"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "async_chunked_transfer",
+ "futures",
  "kvarn",
  "kvarn-fastcgi-client",
  "tokio",

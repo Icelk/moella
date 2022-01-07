@@ -26,7 +26,7 @@ trust-dns-resolver = { version = "^0.20", features = ["dns-over-tls", "dns-over-
 
 [features]
 default = ["mt", "https", "interactive", "kvarn/default"]
-production = ["https", "kvarn/all-http", "kvarn/mt", "kvarn/all-compression", "kvarn/graceful-shutdown"]
+production = ["mt", "https", "kvarn/all-http", "kvarn/all-compression", "kvarn/graceful-shutdown"]
 
 # Interactive program
 interactive = []
@@ -34,5 +34,5 @@ interactive = []
 # Run only on port 8080 for HTTP and 8443 for HTTPS instead of 80 and 443 for testing without root access
 high_ports = []
 
-mt = ["kvarn/mt"]
+mt = []
 https = ["kvarn/https"]
