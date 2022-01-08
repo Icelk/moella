@@ -17,6 +17,7 @@ kvarn = { path = "../kvarn", default-features = false }
 # kvarn = { version = "^0.3", default-features = false }
 kvarn-extensions = { path = "../kvarn/extensions", features = ["reverse-proxy"] }
 # kvarn-extensions = "^0.3"
+kvarn-search = { path = "../kvarn-search" }
 http = "^0.2"
 env_logger = "^0.8"
 tokio = { version = "^1", features = ["macros"] }

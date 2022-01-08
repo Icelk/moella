@@ -8,7 +8,7 @@ async fn main() {
     let env_log = env_logger::Env::default().default_filter_or("rustls=off,warn");
     env_logger::Builder::from_env(env_log).init();
 
-    let icelk_host = hosts::icelk(hosts::icelk_extensions());
+    let icelk_host = hosts::icelk(hosts::icelk_extensions()).await;
     let kvarn_host = hosts::kvarn(hosts::kvarn_extensions());
     let kvarn_doc_host = hosts::kvarn_doc(hosts::kvarn_doc_extensions());
     let agde_host = hosts::agde(hosts::kvarn_extensions());

@@ -213,9 +213,13 @@ pub fn icelk_extensions() -> Extensions {
     extensions
 }
 
-pub fn icelk(extensions: Extensions) -> Host {
+pub async fn icelk(extensions: Extensions) -> Host {
     let mut host = host_from_name("icelk.dev", "../icelk.dev/", extensions);
     host.disable_client_cache().disable_server_cache();
+
+    let se_handle = kvarn_search::mount_search(&mut host.extensions, "/search").await;
+    se_handle.index(&host).await;
+
     host
 }
 pub fn kvarn_extensions() -> Extensions {
