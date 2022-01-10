@@ -217,7 +217,7 @@ pub async fn icelk(extensions: Extensions) -> Host {
     let mut host = host_from_name("icelk.dev", "../icelk.dev/", extensions);
     host.disable_client_cache().disable_server_cache();
 
-    let se_handle = kvarn_search::mount_search(&mut host.extensions, "/search").await;
+    let se_handle = kvarn_search::mount_search(&mut host.extensions, "/search", kvarn_search::Options::default()).await;
     se_handle.index(&host).await;
 
     host
