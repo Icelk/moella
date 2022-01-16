@@ -97,7 +97,7 @@ async fn main() {
             use std::io::{prelude::*, stdin};
 
             // Start `kvarn-chute`
-            let mut child = match std::process::Command::new("kvarn-chute").arg("../").spawn() {
+            let mut child = match std::process::Command::new("chute").arg("../").spawn() {
                 Ok(child) => {
                     println!("Successfully started 'kvarn-chute!'");
                     Some(child)
