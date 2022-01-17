@@ -13,18 +13,20 @@ use kvarn::prelude::*;
 ///
 /// ```no_compile
 /// // Notice the binding to a variable and then awaiting it.
-/// let future = UnsafeSyncFuture::new(resolver.ipv4_lookup(query));
+/// let future = UnsafeSendSyncFuture::new(resolver.ipv4_lookup(query));
 /// let result = future.await;
 /// ```
-struct UnsafeSyncFuture<F>(F);
-impl<F> UnsafeSyncFuture<F> {
-    fn new(future: F) -> UnsafeSyncFuture<Pin<Box<F>>> {
-        UnsafeSyncFuture(Box::pin(future))
+struct UnsafeSendSyncFuture<F>(F);
+impl<F> UnsafeSendSyncFuture<F> {
+    fn new(future: F) -> UnsafeSendSyncFuture<Pin<Box<F>>> {
+        UnsafeSendSyncFuture(Box::pin(future))
     }
 }
-unsafe impl<F> Send for UnsafeSyncFuture<F> {}
-unsafe impl<F> Sync for UnsafeSyncFuture<F> {}
-impl<O, F: Future<Output = O> + Unpin> Future for UnsafeSyncFuture<F> {
+// That's the point!
+#[allow(clippy::non_send_fields_in_send_ty)]
+unsafe impl<F> Send for UnsafeSendSyncFuture<F> {}
+unsafe impl<F> Sync for UnsafeSendSyncFuture<F> {}
+impl<O, F: Future<Output = O> + Unpin> Future for UnsafeSendSyncFuture<F> {
     type Output = O;
     fn poll(mut self: Pin<&mut Self>, ctx: &mut Context) -> Poll<Self::Output> {
         Future::poll(Pin::new(&mut self.0), ctx)
@@ -63,7 +65,7 @@ pub fn icelk_extensions() -> Extensions {
                     ($result: expr, $kind: expr, $mod_name: ident, $modification: expr) => {{
                         let body = Arc::clone(&body);
                         let future = async move {
-                            let mut future = UnsafeSyncFuture::new($result);
+                            let mut future = UnsafeSendSyncFuture::new($result);
                             if let Ok(lookup) = future.await {
                                 let mut lock = body.lock().await;
                                 for $mod_name in lookup.iter() {
@@ -153,7 +155,7 @@ pub fn icelk_extensions() -> Extensions {
                         }
                     ) {
                         let query = queries.get("lookup-name").map(utils::parse::QueryPair::value).unwrap_or("icelk.dev.");
-                        let future = UnsafeSyncFuture::new(resolver.ipv4_lookup(query));
+                        let future = UnsafeSendSyncFuture::new(resolver.ipv4_lookup(query));
                         let result = future.await;
                         if result.is_ok() {
                             "supported"
@@ -212,16 +214,21 @@ pub fn icelk_extensions() -> Extensions {
 
     extensions
 }
-
-pub async fn icelk(extensions: Extensions) -> Host {
+pub async fn icelk(extensions: Extensions) -> (Host, kvarn_search::SearchEngineHandle) {
     let mut host = host_from_name("icelk.dev", "../icelk.dev/", extensions);
     host.disable_client_cache().disable_server_cache();
 
-    let se_handle = kvarn_search::mount_search(&mut host.extensions, "/search", kvarn_search::Options::default()).await;
+    let se_handle = kvarn_search::mount_search(
+        &mut host.extensions,
+        "/search",
+        kvarn_search::Options::default(),
+    )
+    .await;
     se_handle.index(&host).await;
 
-    host
+    (host, se_handle)
 }
+
 pub fn kvarn_extensions() -> Extensions {
     let mut extensions = kvarn_extensions::new();
     kvarn_extensions::force_cache(
@@ -297,6 +304,7 @@ pub fn kvarn_doc(extensions: Extensions) -> Host {
 
     host
 }
+
 pub fn agde(mut extensions: Extensions) -> Host {
     extensions.add_prepare_fn(
         Box::new(|_, _| true),

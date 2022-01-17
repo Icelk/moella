@@ -1,5 +1,7 @@
 # Kvarn reference binary
 
+> As [kvarn-search](https://github.com/Icelk/kvarn-search) isn't published on crates.io yet, you must clone it at `../kvarn-search`.
+
 This is a reference implementation of the Kvarn server library.
 It's for my personal use for my domains [icelk.dev](https://icelk.dev/) and [kvarn.org](https://kvarn.org/)
 and will therefore not work with most configurations.
