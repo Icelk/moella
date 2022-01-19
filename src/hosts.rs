@@ -224,7 +224,7 @@ pub async fn icelk(extensions: Extensions) -> (Host, kvarn_search::SearchEngineH
         kvarn_search::Options::default(),
     )
     .await;
-    se_handle.index(&host).await;
+    se_handle.index_all(&host).await;
 
     (host, se_handle)
 }
