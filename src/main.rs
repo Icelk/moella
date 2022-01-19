@@ -57,7 +57,9 @@ async fn main() {
 
     let hosts = hosts.build();
 
-    icelk_se.watch("icelk.dev", Arc::clone(&hosts)).unwrap();
+    if hosts.get_host("icelk.dev").is_some() {
+        icelk_se.watch("icelk.dev", Arc::clone(&hosts)).unwrap();
+    }
 
     #[cfg(not(feature = "high_ports"))]
     let http_port = 80;
