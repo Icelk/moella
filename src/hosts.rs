@@ -148,7 +148,7 @@ pub fn icelk_extensions() -> Extensions {
                     );
                     if let Ok(resolver) = trust_dns_resolver::AsyncResolver::tokio(
                         resolver_config,
-                        trust_dns_resolver::config::ResolverOpts{
+                        trust_dns_resolver::config::ResolverOpts {
                             timeout: time::Duration::from_secs_f64(2.0),
                             validate: false,
                             ..Default::default()
