@@ -96,6 +96,7 @@ async fn main() {
             info!("Shutdown complete. Exiting binary.");
             std::process::exit(0);
         });
+        let sm = Arc::clone(&shutdown_manager);
         let thread = std::thread::spawn(move || {
             use futures::executor::block_on;
             use std::io::{prelude::*, stdin};
@@ -172,7 +173,7 @@ async fn main() {
                             println!("Cleared all caches!");
                         }
                         "shutdown" | "sd" => {
-                            shutdown_manager.shutdown();
+                            sm.shutdown();
                             if let Some(child) = &mut child {
                                 drop(child.kill());
                             }
@@ -185,5 +186,8 @@ async fn main() {
             }
         });
         thread.join().unwrap();
+
+        shutdown_manager.shutdown();
+        shutdown_manager.wait().await;
     }
 }
