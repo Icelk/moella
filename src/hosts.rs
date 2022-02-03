@@ -201,14 +201,14 @@ pub fn icelk_extensions() -> Extensions {
 
     let base_csp = CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org"));
     extensions.with_csp(
-        Csp::new()
+        Csp::empty()
             .add("*", base_csp.clone())
             .add(
                 "/index.html",
                 base_csp.script_src(CspValueSet::default().unsafe_inline()),
             )
-            .add("/api/*", CspRule::new())
-            .add("/ip", CspRule::new())
+            .add("/api/*", CspRule::empty())
+            .add("/ip", CspRule::empty())
             .arc(),
     );
 
@@ -238,7 +238,7 @@ pub fn kvarn_extensions() -> Extensions {
         ],
     );
 
-    let kvarn_cors = Cors::new()
+    let kvarn_cors = Cors::empty()
         .add(
             "/logo.svg",
             CorsAllowList::new(time::Duration::from_secs(60 * 60 * 24 * 14))
@@ -283,7 +283,7 @@ pub fn kvarn_doc_extensions() -> Extensions {
     }));
 
     extensions.with_csp(
-        Csp::new()
+        Csp::empty()
             .add(
                 "*",
                 CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org")),
@@ -361,7 +361,8 @@ pub fn icelk_bitwarden_extensions() -> Extensions {
         Id::new(1000, "override Let's Encrypt path"),
     );
 
-    extensions.with_csp(Csp::new().arc());
+    // Disable, to let reverse proxies' CSP through.
+    extensions.with_csp(Csp::empty().arc());
 
     extensions
 }
