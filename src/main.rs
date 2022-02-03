@@ -5,7 +5,7 @@ pub mod hosts;
 #[cfg_attr(feature = "mt", tokio::main)]
 #[cfg_attr(not(feature = "mt"), tokio::main(flavor = "current_thread"))]
 async fn main() {
-    let env_log = env_logger::Env::default().default_filter_or("rustls=off,warn");
+    let env_log = env_logger::Env::new().filter_or("KVARN_LOG", "rustls=off,warn");
     env_logger::Builder::from_env(env_log).init();
 
     let (icelk_host, icelk_se) = hosts::icelk(hosts::icelk_extensions()).await;
