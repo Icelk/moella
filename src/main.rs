@@ -102,13 +102,14 @@ async fn main() {
             use std::io::{prelude::*, stdin};
 
             // Start `kvarn-chute`
-            let mut child = match std::process::Command::new("chute").arg("../").spawn() {
+            static CHUTE_COMMAND: &str = "chute";
+            let mut child = match std::process::Command::new(CHUTE_COMMAND).arg("../").spawn() {
                 Ok(child) => {
-                    println!("Successfully started 'kvarn-chute!'");
+                    println!("Successfully started '{}'.", CHUTE_COMMAND);
                     Some(child)
                 }
                 Err(_) => {
-                    eprintln!("Failed to start 'kvarn-chute'.");
+                    eprintln!("Failed to start '{}'.", CHUTE_COMMAND);
                     None
                 }
             };
