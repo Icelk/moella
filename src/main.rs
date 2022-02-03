@@ -89,28 +89,29 @@ async fn main() {
 
     #[cfg(feature = "interactive")]
     {
+        let chute = Arc::new(std::sync::Mutex::new(None));
+        let chute_handle = Arc::clone(&chute);
+        // Start `kvarn-chute`
+        static CHUTE_COMMAND: &str = "chute";
+        match std::process::Command::new(CHUTE_COMMAND).arg("../").spawn() {
+            Ok(child) => {
+                println!("Successfully started '{}'.", CHUTE_COMMAND);
+                *chute_handle.lock().unwrap() = Some(child);
+            }
+            Err(_) => {
+                eprintln!("Failed to start '{}'.", CHUTE_COMMAND);
+            }
+        }
+
         let waiter = shutdown_manager.clone();
         // Exit the application on shutdown.
         tokio::spawn(async move {
             waiter.wait().await;
             info!("Shutdown complete. Exiting binary.");
-            std::process::exit(0);
-        });
-
-        // Create a thread to .wait the child. This ensures the child is killed when ctrl+c and
-        // other methods of exiting.
-        std::thread::spawn(|| {
-            // Start `kvarn-chute`
-            static CHUTE_COMMAND: &str = "chute";
-            match std::process::Command::new(CHUTE_COMMAND).arg("../").spawn() {
-                Ok(mut child) => {
-                    println!("Successfully started '{}'.", CHUTE_COMMAND);
-                    child.wait().unwrap();
-                }
-                Err(_) => {
-                    eprintln!("Failed to start '{}'.", CHUTE_COMMAND);
-                }
+            if let Some(c) = chute_handle.lock().unwrap().as_mut() {
+                drop(c.kill())
             }
+            std::process::exit(0);
         });
 
         let sm = Arc::clone(&shutdown_manager);
@@ -179,6 +180,7 @@ async fn main() {
                         }
                         "shutdown" | "sd" => {
                             sm.shutdown();
+                            break;
                         }
                         _ => {
                             eprintln!("Unknown command!");
@@ -188,6 +190,13 @@ async fn main() {
             }
         });
         thread.join().unwrap();
+        if let Some(c) = chute.lock().unwrap().as_mut() {
+            // Check if OK since we might be in between killing of child and std::process::exit
+            // as above.
+            if c.kill().is_ok() {
+                c.wait().unwrap();
+            }
+        }
 
         shutdown_manager.shutdown();
         shutdown_manager.wait().await;
