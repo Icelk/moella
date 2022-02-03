@@ -96,23 +96,27 @@ async fn main() {
             info!("Shutdown complete. Exiting binary.");
             std::process::exit(0);
         });
+
+        // Create a thread to .wait the child. This ensures the child is killed when ctrl+c and
+        // other methods of exiting.
+        std::thread::spawn(|| {
+            // Start `kvarn-chute`
+            static CHUTE_COMMAND: &str = "chute";
+            match std::process::Command::new(CHUTE_COMMAND).arg("../").spawn() {
+                Ok(mut child) => {
+                    println!("Successfully started '{}'.", CHUTE_COMMAND);
+                    child.wait().unwrap();
+                }
+                Err(_) => {
+                    eprintln!("Failed to start '{}'.", CHUTE_COMMAND);
+                }
+            }
+        });
+
         let sm = Arc::clone(&shutdown_manager);
         let thread = std::thread::spawn(move || {
             use futures::executor::block_on;
             use std::io::{prelude::*, stdin};
-
-            // Start `kvarn-chute`
-            static CHUTE_COMMAND: &str = "chute";
-            let mut child = match std::process::Command::new(CHUTE_COMMAND).arg("../").spawn() {
-                Ok(child) => {
-                    println!("Successfully started '{}'.", CHUTE_COMMAND);
-                    Some(child)
-                }
-                Err(_) => {
-                    eprintln!("Failed to start '{}'.", CHUTE_COMMAND);
-                    None
-                }
-            };
 
             // Commands in console
             for line in stdin().lock().lines().flatten() {
@@ -175,9 +179,6 @@ async fn main() {
                         }
                         "shutdown" | "sd" => {
                             sm.shutdown();
-                            if let Some(child) = &mut child {
-                                drop(child.kill());
-                            }
                         }
                         _ => {
                             eprintln!("Unknown command!");
