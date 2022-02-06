@@ -40,7 +40,7 @@ pub fn icelk_extensions() -> Extensions {
     let resolver_opts = trust_dns_resolver::config::ResolverOpts {
         cache_size: 0,
         validate: false,
-        timeout: time::Duration::from_millis(1000),
+        timeout: Duration::from_millis(1000),
         ..Default::default()
     };
     let mut resolver_config = trust_dns_resolver::config::ResolverConfig::new();
@@ -149,7 +149,7 @@ pub fn icelk_extensions() -> Extensions {
                     if let Ok(resolver) = trust_dns_resolver::AsyncResolver::tokio(
                         resolver_config,
                         trust_dns_resolver::config::ResolverOpts {
-                            timeout: time::Duration::from_secs_f64(2.0),
+                            timeout: Duration::from_secs_f64(2.0),
                             validate: false,
                             ..Default::default()
                         }
@@ -216,7 +216,8 @@ pub fn icelk_extensions() -> Extensions {
 }
 pub async fn icelk(extensions: Extensions) -> (Host, kvarn_search::SearchEngineHandle) {
     let mut host = host_from_name("icelk.dev", "../icelk.dev/", extensions);
-    host.disable_client_cache().disable_server_cache();
+    // host.disable_client_cache().disable_server_cache();
+    host.disable_client_cache();
 
     let se_options = kvarn_search::Options::default();
     let se_handle = kvarn_search::mount_search(&mut host.extensions, "/search", se_options).await;
@@ -241,13 +242,13 @@ pub fn kvarn_extensions() -> Extensions {
     let kvarn_cors = Cors::empty()
         .add(
             "/logo.svg",
-            CorsAllowList::new(time::Duration::from_secs(60 * 60 * 24 * 14))
+            CorsAllowList::new(Duration::from_secs(60 * 60 * 24 * 14))
                 .add_origin("https://github.com")
                 .add_origin("https://doc.kvarn.org"),
         )
         .add(
             "/favicon.svg",
-            CorsAllowList::new(time::Duration::from_secs(60 * 60 * 24 * 14))
+            CorsAllowList::new(Duration::from_secs(60 * 60 * 24 * 14))
                 .add_origin("https://doc.kvarn.org"),
         )
         .arc();
@@ -330,7 +331,7 @@ pub fn icelk_bitwarden_extensions() -> Extensions {
         kvarn_extensions::static_connection(kvarn_extensions::Connection::Tcp(
             kvarn_extensions::localhost(8000),
         )),
-        time::Duration::from_secs(15),
+        Duration::from_secs(15),
     );
     rev_proxy.mount(&mut extensions);
     kvarn_extensions::force_cache(
