@@ -9,6 +9,7 @@ async fn main() {
     env_logger::Builder::from_env(env_log).init();
 
     let (icelk_host, icelk_se) = hosts::icelk(hosts::icelk_extensions()).await;
+    let icelk_doc_host = hosts::icelk_doc(hosts::icelk_doc_extensions());
     let kvarn_host = hosts::kvarn(hosts::kvarn_extensions());
     let kvarn_doc_host = hosts::kvarn_doc(hosts::kvarn_doc_extensions());
     let agde_host = hosts::agde(hosts::kvarn_extensions());
@@ -18,6 +19,7 @@ async fn main() {
 
     let mut hosts = match host.as_deref() {
         Some("--icelk") => HostCollection::builder().default(icelk_host),
+        Some("--icelk-doc") => HostCollection::builder().default(icelk_doc_host),
         Some("--kvarn") => HostCollection::builder().default(kvarn_host),
         Some("--kvarn-doc") => HostCollection::builder().default(kvarn_doc_host),
         Some("--agde") => HostCollection::builder().default(agde_host),
@@ -28,6 +30,7 @@ async fn main() {
         }
         _ => HostCollection::builder()
             .insert(icelk_host)
+            .insert(icelk_doc_host)
             .insert(kvarn_host)
             .insert(kvarn_doc_host)
             .insert(agde_host)

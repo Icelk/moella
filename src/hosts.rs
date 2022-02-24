@@ -225,6 +225,41 @@ pub async fn icelk(extensions: Extensions) -> (Host, kvarn_search::SearchEngineH
     (host, se_handle)
 }
 
+pub fn icelk_doc_extensions() -> Extensions {
+    let mut extensions = Extensions::new();
+
+    extensions.add_present_internal("tmpl".to_string(), Box::new(kvarn_extensions::templates_ext));
+
+    kvarn_extensions::force_cache(
+        &mut extensions,
+        &[
+            (".html", ClientCachePreference::None),
+            (".woff2", ClientCachePreference::Full),
+            (".woff", ClientCachePreference::Full),
+            (".svg", ClientCachePreference::Changing),
+            (".js", ClientCachePreference::Changing),
+            (".css", ClientCachePreference::Changing),
+        ],
+    );
+
+    extensions.with_csp(
+        Csp::empty()
+            .add(
+                "*",
+                CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org")),
+            )
+            .arc(),
+    );
+    extensions
+}
+pub fn icelk_doc(extensions: Extensions) -> Host {
+    let mut host = host_from_name("doc.icelk.dev", "../icelk.dev/doc/", extensions);
+
+    host.disable_server_cache().disable_client_cache();
+
+    host
+}
+
 pub fn kvarn_extensions() -> Extensions {
     let mut extensions = kvarn_extensions::new();
     kvarn_extensions::force_cache(
