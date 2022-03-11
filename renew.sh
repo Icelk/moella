@@ -13,4 +13,4 @@ chmod -R g-r,o-r ~/.private/certs
 # sync with remote
 rsync -rLPh --exclude target --exclude .git . server:/home/icelk/kvarn/kvarn-reference/
 # Restart kvarn
-ssh root@server systemctl restart kvarn
+ssh root@server systemctl restart kvarn unbound postfix
