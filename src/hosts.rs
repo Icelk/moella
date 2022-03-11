@@ -338,7 +338,8 @@ pub fn kvarn_doc(extensions: Extensions) -> Host {
 
 pub fn agde(mut extensions: Extensions) -> Host {
     extensions.add_prepare_fn(
-        Box::new(|_, _| true),
+        // allow Let's Encrypt requests through
+        Box::new(|req, _| !req.uri().path().starts_with("/.well-known")),
         prepare!(_req, _host, _path, _addr {
             FatResponse::no_cache(
                 Response::builder()
