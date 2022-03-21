@@ -228,7 +228,7 @@ pub async fn icelk(extensions: Extensions) -> (Host, kvarn_search::SearchEngineH
 pub fn icelk_doc_extensions() -> Extensions {
     let mut extensions = Extensions::new();
 
-    extensions.add_present_internal("tmpl".to_string(), Box::new(kvarn_extensions::templates_ext));
+    extensions.add_present_internal("tmpl", Box::new(kvarn_extensions::templates_ext));
 
     kvarn_extensions::force_cache(
         &mut extensions,
@@ -312,7 +312,7 @@ pub fn kvarn_doc_extensions() -> Extensions {
         ],
     );
 
-    extensions.add_prepare_single("/index.html".to_owned(), prepare!(_req, _host, _path, _addr {
+    extensions.add_prepare_single("/index.html", prepare!(_req, _host, _path, _addr {
         let response = Response::builder().status(StatusCode::PERMANENT_REDIRECT).header("location", "kvarn/").body(Bytes::new()).expect("we know this is ok.");
         FatResponse::cache(response)
     }));
@@ -412,6 +412,38 @@ pub fn icelk_bitwarden(extensions: Extensions) -> Host {
     host
 }
 
+pub fn mail_hosts(file: impl AsRef<Path>) -> Vec<Host> {
+    let file = match std::fs::read(file.as_ref()) {
+        Ok(f) => f,
+        Err(err) => {
+            warn!(
+                "Failed to read mail hosts file '{}': {}",
+                file.as_ref().display(),
+                err
+            );
+            return Vec::new();
+        }
+    };
+
+    let file = String::from_utf8_lossy(&file);
+    file.lines()
+        .filter_map(|domain| {
+            let domain = domain.trim();
+            if domain.is_empty() {
+                None
+            } else {
+                info!("Setting up host '{domain}'.");
+                Some(Host::unsecure(
+                    domain,
+                    "mail",
+                    Extensions::default(),
+                    host::Options::default(),
+                ))
+            }
+        })
+        .collect()
+}
+
 fn host_from_name(name: &'static str, path: impl AsRef<Path>, extensions: Extensions) -> Host {
     #[cfg(feature = "https")]
     {
@@ -422,18 +454,13 @@ fn host_from_name(name: &'static str, path: impl AsRef<Path>, extensions: Extens
             name,
             format!("{}-cert.pem", &cert_base),
             format!("{}-pk.pem", &cert_base),
-            path.as_ref().to_path_buf(),
+            path.as_ref(),
             extensions,
             host::Options::default(),
         )
     }
     #[cfg(not(feature = "https"))]
     {
-        Host::non_secure(
-            name,
-            path.as_ref().to_path_buf(),
-            extensions,
-            host::Options::default(),
-        )
+        Host::non_secure(name, path.as_ref(), extensions, host::Options::default())
     }
 }

@@ -37,25 +37,14 @@ async fn main() {
             .insert(icelk_bitwarden_host),
     };
 
+    // insert HTTP mail hosts, enables Let's Encrypt to validate ownership.
+    // All the hosts in the `mail-hosts.txt` file (separated by newlines)
+    // are getting data from `$CWD/mail/public/`
     {
-        hosts = hosts.insert(Host::unsecure(
-            "mail.icelk.dev",
-            "mail",
-            Extensions::default(),
-            host::Options::default(),
-        ));
-        hosts = hosts.insert(Host::unsecure(
-            "mail.kvarn.org",
-            "mail",
-            Extensions::default(),
-            host::Options::default(),
-        ));
-        hosts = hosts.insert(Host::unsecure(
-            "mail.agde.dev",
-            "mail",
-            Extensions::default(),
-            host::Options::default(),
-        ));
+        let mail_hosts = hosts::mail_hosts("mail-hosts.txt");
+        for host in mail_hosts {
+            hosts = hosts.insert(host);
+        }
     }
 
     let hosts = hosts.build();
