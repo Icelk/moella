@@ -735,6 +735,7 @@ dependencies = [
 name = "kvarn"
 version = "0.3.0"
 dependencies = [
+ "base64",
  "brotli",
  "bytes",
  "flate2",
@@ -744,9 +745,11 @@ dependencies = [
  "kvarn_async",
  "kvarn_utils",
  "log",
+ "memchr",
  "mime",
  "mime_guess",
  "percent-encoding",
+ "rand 0.8.5",
  "rustls 0.20.4",
  "rustls-pemfile",
  "time 0.3.9",
