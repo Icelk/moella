@@ -743,6 +743,7 @@ dependencies = [
  "h2",
  "http",
  "kvarn_async",
+ "kvarn_signal",
  "kvarn_utils",
  "log",
  "memchr",
@@ -819,6 +820,14 @@ dependencies = [
  "bytes",
  "http",
  "kvarn_utils",
+ "tokio",
+]
+
+[[package]]
+name = "kvarn_signal"
+version = "0.1.0"
+dependencies = [
+ "log",
  "tokio",
 ]
 
