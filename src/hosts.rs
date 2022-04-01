@@ -56,7 +56,7 @@ pub fn icelk_extensions() -> Extensions {
 
     extensions.add_prepare_single(
         "/dns/lookup",
-        prepare!(req, host, _path, _addr, move |resolver| {
+        prepare!(req, host, _path, _addr, move |resolver: trust_dns_resolver::TokioAsyncResolver| {
             let queries = utils::parse::query(req.uri().query().unwrap_or(""));
             let body = if let Some(domain) = queries.get("domain") {
                 let mut body = Arc::new(Mutex::new(BytesMut::with_capacity(64)));
@@ -65,7 +65,7 @@ pub fn icelk_extensions() -> Extensions {
                     ($result: expr, $kind: expr, $mod_name: ident, $modification: expr) => {{
                         let body = Arc::clone(&body);
                         let future = async move {
-                            let mut future = UnsafeSendSyncFuture::new($result);
+                            let future = UnsafeSendSyncFuture::new($result);
                             if let Ok(lookup) = future.await {
                                 let mut lock = body.lock().await;
                                 for $mod_name in lookup.iter() {
@@ -126,7 +126,7 @@ pub fn icelk_extensions() -> Extensions {
 
     extensions.add_prepare_single(
         "/dns/check-dns-over-tls",
-        prepare!(req, host, _path, _addr {
+        prepare!(req, host, _, _, {
                 let queries = utils::parse::query(req.uri().query().unwrap_or(""));
 
                 let result = if let (Some(ip), Some(name)) = (queries.get("ip"), queries.get("name")) {
@@ -182,7 +182,7 @@ pub fn icelk_extensions() -> Extensions {
     );
     extensions.add_prepare_single(
         "/ip",
-        prepare!(_req, _host, _path, addr {
+        prepare!(_req, _, _, addr, {
             FatResponse::no_cache(Response::new(addr.ip().to_string().into()))
                 .with_compress(comprash::CompressPreference::None)
                 .with_content_type(&mime::TEXT_PLAIN)
@@ -312,7 +312,7 @@ pub fn kvarn_doc_extensions() -> Extensions {
         ],
     );
 
-    extensions.add_prepare_single("/index.html", prepare!(_req, _host, _path, _addr {
+    extensions.add_prepare_single("/index.html", prepare!(_, _, _, _, {
         let response = Response::builder().status(StatusCode::PERMANENT_REDIRECT).header("location", "kvarn/").body(Bytes::new()).expect("we know this is ok.");
         FatResponse::cache(response)
     }));
@@ -340,7 +340,7 @@ pub fn agde(mut extensions: Extensions) -> Host {
     extensions.add_prepare_fn(
         // allow Let's Encrypt requests through
         Box::new(|req, _| !req.uri().path().starts_with("/.well-known")),
-        prepare!(_req, _host, _path, _addr {
+        prepare!(_, _, _, _, {
             FatResponse::no_cache(
                 Response::builder()
                     .status(StatusCode::TEMPORARY_REDIRECT)
@@ -384,7 +384,7 @@ pub fn icelk_bitwarden_extensions() -> Extensions {
 
     extensions.add_prepare_fn(
         Box::new(|req, _| req.uri().path().starts_with("/.well-known")),
-        prepare!(req, host, _path, _addr {
+        prepare!(req, host, _, _, {
             let path = format!("/usr/share/webapps/vaultwarden-web{}", req.uri().path());
             let file = read::file(&path, host.file_cache.as_ref()).await;
             let file = if let Some(f) = file {
