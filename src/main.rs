@@ -107,9 +107,12 @@ async fn main() {
         });
 
         let sm = Arc::clone(&shutdown_manager);
+        let runtime = tokio::runtime::Handle::current();
         let thread = std::thread::spawn(move || {
             use futures::executor::block_on;
             use std::io::{prelude::*, stdin};
+
+            let _rt = runtime.enter();
 
             // Commands in console
             for line in stdin().lock().lines().flatten() {
