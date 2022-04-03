@@ -107,12 +107,9 @@ async fn main() {
         });
 
         let sm = Arc::clone(&shutdown_manager);
-        let runtime = tokio::runtime::Handle::current();
-        let thread = std::thread::spawn(move || {
+        let thread = tokio::task::spawn_blocking(move || {
             use futures::executor::block_on;
             use std::io::{prelude::*, stdin};
-
-            let _rt = runtime.enter();
 
             // Commands in console
             for line in stdin().lock().lines().flatten() {
@@ -184,7 +181,7 @@ async fn main() {
                 }
             }
         });
-        thread.join().unwrap();
+        thread.await.unwrap();
         if let Some(c) = chute.lock().unwrap().as_mut() {
             // Check if OK since we might be in between killing of child and std::process::exit
             // as above.
