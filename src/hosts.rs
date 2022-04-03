@@ -96,7 +96,7 @@ pub fn icelk_extensions() -> Extensions {
                 let mx = append_body!(resolver.mx_lookup(domain.value()), "MX", mx, mx.exchange());
                 let txt = append_body!(resolver.txt_lookup(domain.value()), "TXT");
 
-                futures::join!(a, aaaa, cname, mx, txt);
+                futures_util::join!(a, aaaa, cname, mx, txt);
 
                 let body = std::mem::take(Arc::get_mut(&mut body).unwrap());
                 body.into_inner().freeze()
