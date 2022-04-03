@@ -171,7 +171,8 @@ async fn main() {
                             println!("Cleared all caches!");
                         }
                         "shutdown" | "sd" => {
-                            sm.shutdown();
+                            // when we break, the thread returns.
+                            // The main thread then shuts Kvarn down.
                             break;
                         }
                         _ => {
