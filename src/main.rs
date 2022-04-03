@@ -106,9 +106,7 @@ async fn main() {
             std::process::exit(0);
         });
 
-        let sm = Arc::clone(&shutdown_manager);
         let thread = tokio::task::spawn_blocking(move || {
-            use futures::executor::block_on;
             use std::io::{prelude::*, stdin};
 
             // Commands in console
@@ -118,7 +116,7 @@ async fn main() {
                     match command {
                         "fcc" => {
                             // File cache clear
-                            match block_on(
+                            match tokio::runtime::Handle::current().block_on(
                                 hosts.clear_file_in_cache(&Path::new(words.next().unwrap_or(""))),
                             ) {
                                 true => println!("Removed item from cache!"),
@@ -144,7 +142,8 @@ async fn main() {
                                     continue;
                                 }
                             };
-                            let (cleared, found) = block_on(hosts.clear_page(host, &uri));
+                            let (cleared, found) = tokio::runtime::Handle::current()
+                                .block_on(hosts.clear_page(host, &uri));
 
                             if !found {
                                 println!("Did not found host to remove cached item from. Use 'default' or an empty string (e.g. '') for the default host.");
@@ -155,16 +154,17 @@ async fn main() {
                             }
                         }
                         "cfc" => {
-                            block_on(hosts.clear_file_caches());
+                            tokio::runtime::Handle::current().block_on(hosts.clear_file_caches());
                             println!("Cleared file system cache!");
                         }
                         "crc" => {
-                            block_on(hosts.clear_response_caches());
+                            tokio::runtime::Handle::current()
+                                .block_on(hosts.clear_response_caches());
                             println!("Cleared whole response cache.",);
                         }
                         "cc" => {
                             let hosts = hosts.clone();
-                            block_on(async move {
+                            tokio::runtime::Handle::current().block_on(async move {
                                 hosts.clear_response_caches().await;
                                 hosts.clear_file_caches().await
                             });
