@@ -56,72 +56,79 @@ pub fn icelk_extensions() -> Extensions {
 
     extensions.add_prepare_single(
         "/dns/lookup",
-        prepare!(req, host, _path, _addr, move |resolver: trust_dns_resolver::TokioAsyncResolver| {
-            let queries = utils::parse::query(req.uri().query().unwrap_or(""));
-            let body = if let Some(domain) = queries.get("domain") {
-                let mut body = Arc::new(Mutex::new(BytesMut::with_capacity(64)));
+        prepare!(
+            req,
+            host,
+            _path,
+            _addr,
+            move |resolver: trust_dns_resolver::TokioAsyncResolver| {
+                let queries = utils::parse::query(req.uri().query().unwrap_or(""));
+                let body = if let Some(domain) = queries.get("domain") {
+                    let mut body = Arc::new(Mutex::new(BytesMut::with_capacity(64)));
 
-                macro_rules! append_body {
-                    ($result: expr, $kind: expr, $mod_name: ident, $modification: expr) => {{
-                        let body = Arc::clone(&body);
-                        let future = async move {
-                            let future = UnsafeSendSyncFuture::new($result);
-                            if let Ok(lookup) = future.await {
-                                let mut lock = body.lock().await;
-                                for $mod_name in lookup.iter() {
-                                    let record = $modification;
-                                    lock.extend_from_slice(
-                                        format!("{} {}\n", $kind, record).as_bytes(),
-                                    );
+                    macro_rules! append_body {
+                        ($result: expr, $kind: expr, $mod_name: ident, $modification: expr) => {{
+                            let body = Arc::clone(&body);
+                            let future = async move {
+                                let future = UnsafeSendSyncFuture::new($result);
+                                if let Ok(lookup) = future.await {
+                                    let mut lock = body.lock().await;
+                                    for $mod_name in lookup.iter() {
+                                        let record = $modification;
+                                        lock.extend_from_slice(
+                                            format!("{} {}\n", $kind, record).as_bytes(),
+                                        );
+                                    }
                                 }
-                            }
-                        };
-                        future
-                    }};
-                    ($result: expr, $kind: expr) => {{
-                        append_body!($result, $kind, v, v)
-                    }};
+                            };
+                            future
+                        }};
+                        ($result: expr, $kind: expr) => {{
+                            append_body!($result, $kind, v, v)
+                        }};
+                    }
+
+                    let a = append_body!(resolver.ipv4_lookup(domain.value()), "A");
+                    let aaaa = append_body!(resolver.ipv6_lookup(domain.value()), "AAAA");
+                    let cname = append_body!(
+                        resolver.lookup(
+                            domain.value(),
+                            trust_dns_resolver::proto::rr::RecordType::CNAME,
+                            trust_dns_resolver::proto::xfer::DnsRequestOptions::default()
+                        ),
+                        "CNAME"
+                    );
+                    let mx =
+                        append_body!(resolver.mx_lookup(domain.value()), "MX", mx, mx.exchange());
+                    let txt = append_body!(resolver.txt_lookup(domain.value()), "TXT");
+
+                    futures_util::join!(a, aaaa, cname, mx, txt);
+
+                    let body = std::mem::take(Arc::get_mut(&mut body).unwrap());
+                    body.into_inner().freeze()
+                } else {
+                    return default_error_response(
+                        StatusCode::BAD_REQUEST,
+                        host,
+                        Some("there must be a `domain` key-value pair in the query"),
+                    )
+                    .await;
+                };
+
+                if body.is_empty() {
+                    return default_error_response(
+                        StatusCode::NOT_FOUND,
+                        host,
+                        Some("no DNS entry was found"),
+                    )
+                    .await;
                 }
 
-                let a = append_body!(resolver.ipv4_lookup(domain.value()), "A");
-                let aaaa = append_body!(resolver.ipv6_lookup(domain.value()), "AAAA");
-                let cname = append_body!(
-                    resolver.lookup(
-                        domain.value(),
-                        trust_dns_resolver::proto::rr::RecordType::CNAME,
-                        trust_dns_resolver::proto::xfer::DnsRequestOptions::default()
-                    ),
-                    "CNAME"
-                );
-                let mx = append_body!(resolver.mx_lookup(domain.value()), "MX", mx, mx.exchange());
-                let txt = append_body!(resolver.txt_lookup(domain.value()), "TXT");
-
-                futures_util::join!(a, aaaa, cname, mx, txt);
-
-                let body = std::mem::take(Arc::get_mut(&mut body).unwrap());
-                body.into_inner().freeze()
-            } else {
-                return default_error_response(
-                    StatusCode::BAD_REQUEST,
-                    host,
-                    Some("there must be a `domain` key-value pair in the query"),
-                )
-                .await;
-            };
-
-            if body.is_empty() {
-                return default_error_response(
-                    StatusCode::NOT_FOUND,
-                    host,
-                    Some("no DNS entry was found"),
-                )
-                .await;
+                FatResponse::no_cache(Response::new(body))
+                    .with_compress(comprash::CompressPreference::None)
+                    .with_content_type(&mime::TEXT_PLAIN)
             }
-
-            FatResponse::no_cache(Response::new(body))
-                .with_compress(comprash::CompressPreference::None)
-                .with_content_type(&mime::TEXT_PLAIN)
-        }),
+        ),
     );
 
     extensions.add_prepare_single(
@@ -312,10 +319,17 @@ pub fn kvarn_doc_extensions() -> Extensions {
         ],
     );
 
-    extensions.add_prepare_single("/index.html", prepare!(_, _, _, _, {
-        let response = Response::builder().status(StatusCode::PERMANENT_REDIRECT).header("location", "kvarn/").body(Bytes::new()).expect("we know this is ok.");
-        FatResponse::cache(response)
-    }));
+    extensions.add_prepare_single(
+        "/index.html",
+        prepare!(_, _, _, _, {
+            let response = Response::builder()
+                .status(StatusCode::PERMANENT_REDIRECT)
+                .header("location", "kvarn/")
+                .body(Bytes::new())
+                .expect("we know this is ok.");
+            FatResponse::cache(response)
+        }),
+    );
 
     extensions.with_csp(
         Csp::empty()
@@ -345,10 +359,11 @@ pub fn agde(mut extensions: Extensions) -> Host {
                 Response::builder()
                     .status(StatusCode::TEMPORARY_REDIRECT)
                     .header("location", "https://github.com/Icelk/agde/")
-                    .body(Bytes::new()).unwrap())
-                    .with_server_cache(comprash::ServerCachePreference::Full)
-        }
-        ),
+                    .body(Bytes::new())
+                    .unwrap(),
+            )
+            .with_server_cache(comprash::ServerCachePreference::Full)
+        }),
         Id::new(0, "redirect to GitHub"),
     );
 
