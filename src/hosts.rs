@@ -376,6 +376,14 @@ pub fn agde(mut extensions: Extensions) -> Host {
 
 pub fn icelk_bitwarden_extensions() -> Extensions {
     let mut extensions = Extensions::empty();
+    let ws_rev_proxy = kvarn_extensions::ReverseProxy::base(
+        "/notifications/hub",
+        kvarn_extensions::static_connection(kvarn_extensions::Connection::Tcp(
+            kvarn_extensions::localhost(3012),
+        )),
+        Duration::from_secs(15),
+    )
+    .with_priority(-120);
     let rev_proxy = kvarn_extensions::ReverseProxy::base(
         "/",
         kvarn_extensions::static_connection(kvarn_extensions::Connection::Tcp(
@@ -384,6 +392,7 @@ pub fn icelk_bitwarden_extensions() -> Extensions {
         Duration::from_secs(15),
     );
     rev_proxy.mount(&mut extensions);
+    ws_rev_proxy.mount(&mut extensions);
     kvarn_extensions::force_cache(
         &mut extensions,
         &[
