@@ -391,13 +391,7 @@ pub fn icelk_bitwarden_extensions() -> Extensions {
         )),
         Duration::from_secs(15),
     )
-    .add_modify_fn(Arc::new(|req, _, addr| {
-        utils::replace_header(
-            req.headers_mut(),
-            "x-real-ip",
-            HeaderValue::try_from(addr.ip().to_string()).unwrap(),
-        );
-    }));
+    .with_x_real_ip();
     rev_proxy.mount(&mut extensions);
     ws_rev_proxy.mount(&mut extensions);
     kvarn_extensions::force_cache(
