@@ -49,9 +49,16 @@ async fn main() {
 
     let hosts = hosts.build();
 
-    if hosts.get_host("icelk.dev").is_some() {
-        icelk_se.watch("icelk.dev", Arc::clone(&hosts)).unwrap();
-    }
+    let se_watcher = if hosts.get_host("icelk.dev").is_some() {
+        Some(
+            icelk_se
+                .watch("icelk.dev", Arc::clone(&hosts))
+                .await
+                .unwrap(),
+        )
+    } else {
+        None
+    };
 
     #[cfg(not(feature = "high_ports"))]
     let http_port = 80;
@@ -183,6 +190,7 @@ async fn main() {
             }
         });
         thread.await.unwrap();
+        drop(se_watcher);
         if let Some(c) = chute.lock().unwrap().as_mut() {
             // Check if OK since we might be in between killing of child and std::process::exit
             // as above.
