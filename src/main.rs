@@ -113,83 +113,8 @@ async fn main() {
             std::process::exit(0);
         });
 
-        let thread = tokio::task::spawn_blocking(move || {
-            use std::io::{prelude::*, stdin};
+        shutdown_manager.wait().await;
 
-            // Commands in console
-            for line in stdin().lock().lines().flatten() {
-                let mut words = line.split(' ');
-                if let Some(command) = words.next() {
-                    match command {
-                        "fcc" => {
-                            // File cache clear
-                            match tokio::runtime::Handle::current().block_on(
-                                hosts.clear_file_in_cache(&Path::new(words.next().unwrap_or(""))),
-                            ) {
-                                true => println!("Removed item from cache!"),
-                                false => println!("No item to remove"),
-                            }
-                        }
-                        "rcc" => {
-                            // Response cache clear
-                            let host = match words.next() {
-                                Some(word) => word,
-                                None => {
-                                    println!("Please enter a host to clear cache in.");
-                                    continue;
-                                }
-                            };
-                            let uri = match Uri::builder()
-                                .path_and_query(words.next().unwrap_or(""))
-                                .build()
-                            {
-                                Ok(uri) => uri,
-                                Err(..) => {
-                                    eprintln!("Failed to format path");
-                                    continue;
-                                }
-                            };
-                            let (cleared, found) = tokio::runtime::Handle::current()
-                                .block_on(hosts.clear_page(host, &uri));
-
-                            if !found {
-                                println!("Did not found host to remove cached item from. Use 'default' or an empty string (e.g. '') for the default host.");
-                            } else if !cleared {
-                                println!("Did not remove any cached response.");
-                            } else {
-                                println!("Cleared a cached response.");
-                            }
-                        }
-                        "cfc" => {
-                            tokio::runtime::Handle::current().block_on(hosts.clear_file_caches());
-                            println!("Cleared file system cache!");
-                        }
-                        "crc" => {
-                            tokio::runtime::Handle::current()
-                                .block_on(hosts.clear_response_caches());
-                            println!("Cleared whole response cache.",);
-                        }
-                        "cc" => {
-                            let hosts = hosts.clone();
-                            tokio::runtime::Handle::current().block_on(async move {
-                                hosts.clear_response_caches().await;
-                                hosts.clear_file_caches().await
-                            });
-                            println!("Cleared all caches!");
-                        }
-                        "shutdown" | "sd" => {
-                            // when we break, the thread returns.
-                            // The main thread then shuts Kvarn down.
-                            break;
-                        }
-                        _ => {
-                            eprintln!("Unknown command!");
-                        }
-                    }
-                }
-            }
-        });
-        thread.await.unwrap();
         drop(se_watcher);
         if let Some(c) = chute.lock().unwrap().as_mut() {
             // Check if OK since we might be in between killing of child and std::process::exit
@@ -197,9 +122,6 @@ async fn main() {
             if c.kill().is_ok() {
                 c.wait().unwrap();
             }
-        }
-
-        shutdown_manager.shutdown();
-        shutdown_manager.wait().await;
+        };
     }
 }
