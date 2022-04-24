@@ -49,7 +49,7 @@ async fn main() {
 
     let hosts = hosts.build();
 
-    let se_watcher = if hosts.get_host("icelk.dev").is_some() {
+    let _se_watcher = if hosts.get_host("icelk.dev").is_some() {
         Some(
             icelk_se
                 .watch("icelk.dev", Arc::clone(&hosts))
@@ -115,7 +115,7 @@ async fn main() {
 
         shutdown_manager.wait().await;
 
-        drop(se_watcher);
+        drop(_se_watcher);
         if let Some(c) = chute.lock().unwrap().as_mut() {
             // Check if OK since we might be in between killing of child and std::process::exit
             // as above.
