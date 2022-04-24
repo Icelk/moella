@@ -13,17 +13,17 @@ keywords = ["web-server"]
 categories = ["web-programming", "web-programming::http-server", "command-line-utilities"]
 
 [dependencies]
-kvarn = { path = "../kvarn", default-features = false }
-# kvarn = { version = "^0.3", default-features = false }
-kvarn-extensions = { path = "../kvarn/extensions", features = ["reverse-proxy"] }
-# kvarn-extensions = "^0.3"
-kvarn-search = { path = "../kvarn-search" }
-http = "^0.2"
-env_logger = "^0.8"
-tokio = { version = "^1", features = ["macros"] }
-log = "^0.4"
+# kvarn = { path = "../kvarn", default-features = false }
+kvarn = { version = "0.4", default-features = false }
+# kvarn-extensions = { path = "../kvarn/extensions", features = ["reverse-proxy"] }
+kvarn-extensions = { version = "0.4", features = ["reverse-proxy"] }
+kvarn-search = "0.1"
+http = "0.2"
+env_logger = "0.8"
+tokio = { version = "1.17", features = ["macros"] }
+log = "0.4"
 futures-util = "0.3"
-trust-dns-resolver = { version = "^0.20", features = ["dns-over-tls", "dns-over-rustls"] }
+trust-dns-resolver = { version = "0.20", features = ["dns-over-tls", "dns-over-rustls"] }
 
 [features]
 default = ["mt", "https", "interactive", "kvarn/default"]
