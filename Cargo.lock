@@ -705,8 +705,6 @@ dependencies = [
 [[package]]
 name = "kvarn"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "757a3649ef5d9fd0b1a4acad16053a81da0a5ee7c21cf0438da9aee134e40f92"
 dependencies = [
  "base64",
  "brotli",
@@ -734,8 +732,6 @@ dependencies = [
 [[package]]
 name = "kvarn-extensions"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4370229679d0e147a63a8acd69ac5362871bf934ab7ff93dd31fee0d67ba9495"
 dependencies = [
  "async_chunked_transfer",
  "futures-util",
@@ -759,7 +755,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn-reference"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "env_logger",
  "futures-util",
@@ -775,8 +771,6 @@ dependencies = [
 [[package]]
 name = "kvarn-search"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a17bb5d73f5f3691900125467236b0b438a46c813827cac242f7dc62adaf0b0c"
 dependencies = [
  "elipdotter",
  "kvarn",
@@ -791,8 +785,6 @@ dependencies = [
 [[package]]
 name = "kvarn_async"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89351f66ecb46b8dede5a064fb56f6b85c804c804107b933f321ef5e1ad1f009"
 dependencies = [
  "bytes",
  "http",
@@ -803,8 +795,6 @@ dependencies = [
 [[package]]
 name = "kvarn_signal"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a099201d2710edae223fb2d8776253665becdad826782777b5c6f31098254187"
 dependencies = [
  "futures-util",
  "log",
@@ -814,8 +804,6 @@ dependencies = [
 [[package]]
 name = "kvarn_utils"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca2d30ddaf508deed00f3bd6801ba18a8da67ad42db3ba6fb93978ef7166ebd8"
 dependencies = [
  "bytes",
  "http",

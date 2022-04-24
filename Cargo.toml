@@ -13,11 +13,12 @@ keywords = ["web-server"]
 categories = ["web-programming", "web-programming::http-server", "command-line-utilities"]
 
 [dependencies]
-# kvarn = { path = "../kvarn", default-features = false }
-kvarn = { version = "0.4", default-features = false }
-# kvarn-extensions = { path = "../kvarn/extensions", features = ["reverse-proxy"] }
-kvarn-extensions = { version = "0.4", features = ["reverse-proxy"] }
-kvarn-search = "0.1"
+kvarn = { path = "../kvarn", default-features = false }
+# kvarn = { version = "0.4", default-features = false }
+kvarn-extensions = { path = "../kvarn/extensions", features = ["reverse-proxy"] }
+# kvarn-extensions = { version = "0.4", features = ["reverse-proxy"] }
+kvarn-search = { path = "../kvarn-search" }
+# kvarn-search = "0.1"
 http = "0.2"
 env_logger = "0.8"
 tokio = { version = "1.17", features = ["macros"] }

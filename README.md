@@ -21,6 +21,10 @@ $ cargo install kvarn-reference
 To get this example working, it is assumed you have the [Kvarn](https://github.com/Icelk/kvarn) library in `../kvarn`,
 the files for `icelk.dev` and `kvarn.org` in `../icelk.dev` and `../kvarn.org`, respectively.
 
+# Development
+
+During development, this requires [Kvarn](https://github.com/Icelk/kvarn) to be cloned at `../kvarn` and [Kvarn Search](https://github.com/Icelk/kvarn-search) at `../kvarn-search`.
+
 # Future
 
-I plan to add support for a [config file](https://kvarn.org/config.) so you do *not* have to recompile the binary every time you want to support a new domain.
+I plan to add support for a [config file](https://kvarn.org/config.) so you do _not_ have to recompile the binary every time you want to support a new domain.
