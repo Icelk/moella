@@ -296,12 +296,16 @@ pub fn kvarn_extensions() -> Extensions {
     extensions.with_cors(kvarn_cors);
     extensions
 }
-pub fn kvarn(extensions: Extensions) -> Host {
+pub async fn kvarn(extensions: Extensions) -> (Host, kvarn_search::SearchEngineHandle) {
     let mut host = host_from_name("kvarn.org", "../kvarn.org/", extensions);
 
     host.disable_client_cache().disable_server_cache();
 
-    host
+    let se_options = kvarn_search::Options::default();
+    let se_handle = kvarn_search::mount_search(&mut host.extensions, "/search", se_options).await;
+    se_handle.index_all(&host).await;
+
+    (host, se_handle)
 }
 
 pub fn kvarn_doc_extensions() -> Extensions {

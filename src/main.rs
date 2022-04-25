@@ -10,7 +10,7 @@ async fn main() {
 
     let (icelk_host, icelk_se) = hosts::icelk(hosts::icelk_extensions()).await;
     let icelk_doc_host = hosts::icelk_doc(hosts::icelk_doc_extensions());
-    let kvarn_host = hosts::kvarn(hosts::kvarn_extensions());
+    let (kvarn_host, kvarn_se) = hosts::kvarn(hosts::kvarn_extensions()).await;
     let kvarn_doc_host = hosts::kvarn_doc(hosts::kvarn_doc_extensions());
     let agde_host = hosts::agde(hosts::kvarn_extensions());
     let icelk_bitwarden_host = hosts::icelk_bitwarden(hosts::icelk_bitwarden_extensions());
@@ -50,12 +50,15 @@ async fn main() {
     let hosts = hosts.build();
 
     let _se_watcher = if hosts.get_host("icelk.dev").is_some() {
-        Some(
-            icelk_se
-                .watch("icelk.dev", Arc::clone(&hosts))
-                .await
-                .unwrap(),
-        )
+        let icelk = icelk_se
+            .watch("icelk.dev", Arc::clone(&hosts))
+            .await
+            .unwrap();
+        let kvarn = kvarn_se
+            .watch("kvarn.org", Arc::clone(&hosts))
+            .await
+            .unwrap();
+        Some((icelk, kvarn))
     } else {
         None
     };
