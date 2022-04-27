@@ -729,6 +729,7 @@ dependencies = [
  "kvarn_async",
  "kvarn_signal",
  "kvarn_utils",
+ "libc",
  "log",
  "memchr",
  "mime",
