@@ -49,16 +49,23 @@ async fn main() {
 
     let hosts = hosts.build();
 
-    let _se_watcher = if hosts.get_host("icelk.dev").is_some() {
-        let icelk = icelk_se
-            .watch("icelk.dev", Arc::clone(&hosts))
-            .await
-            .unwrap();
-        let kvarn = kvarn_se
-            .watch("kvarn.org", Arc::clone(&hosts))
-            .await
-            .unwrap();
-        Some((icelk, kvarn))
+    let _se_icelk_watcher = if hosts.get_host("icelk.dev").is_some() {
+        Some(
+            icelk_se
+                .watch("icelk.dev", Arc::clone(&hosts))
+                .await
+                .unwrap(),
+        )
+    } else {
+        None
+    };
+    let _se_kvarn_watcher = if hosts.get_host("kvarn.org").is_some() {
+        Some(
+            kvarn_se
+                .watch("kvarn.org", Arc::clone(&hosts))
+                .await
+                .unwrap(),
+        )
     } else {
         None
     };
@@ -118,7 +125,7 @@ async fn main() {
 
         shutdown_manager.wait().await;
 
-        drop(_se_watcher);
+        drop(_se_icelk_watcher);
         if let Some(c) = chute.lock().unwrap().as_mut() {
             // Check if OK since we might be in between killing of child and std::process::exit
             // as above.
