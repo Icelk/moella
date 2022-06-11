@@ -718,7 +718,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "base64",
  "brotli",
@@ -746,7 +746,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn-extensions"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "async_chunked_transfer",
  "futures-util",
@@ -800,7 +800,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn_async"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "bytes",
  "http",
@@ -819,7 +819,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn_utils"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "bytes",
  "http",

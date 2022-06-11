@@ -219,6 +219,36 @@ pub fn icelk_extensions() -> Extensions {
             .arc(),
     );
 
+    let mut private_ical = kvarn_extensions::ReverseProxy::base(
+        "/private-ical/",
+        kvarn_extensions::static_connection(kvarn_extensions::Connection::Tcp(
+            kvarn_extensions::localhost(5232),
+        )),
+        Duration::from_secs(10),
+    );
+    private_ical = private_ical
+        .add_modify_fn(Arc::new(|request, _bytes, _addr| {
+            request
+                .headers_mut()
+                .insert("x-script-name", HeaderValue::from_static("/private-ical"));
+        }))
+        .add_modify_fn(Arc::new(|req, _, _| {
+            if let Some(path) = req.uri().path().strip_suffix("/index.html") {
+                let mut parts = req.uri().clone().into_parts();
+                let pq = format!(
+                    "{path}/{}",
+                    parts
+                        .path_and_query
+                        .as_ref()
+                        .map_or("", |pq| pq.query().unwrap_or(""))
+                );
+                let pq = uri::PathAndQuery::from_maybe_shared(pq.into_bytes()).unwrap();
+                parts.path_and_query = Some(pq);
+                *req.uri_mut() = Uri::from_parts(parts).unwrap();
+            }
+        }));
+    private_ical.mount(&mut extensions);
+
     extensions
 }
 pub async fn icelk(extensions: Extensions) -> (Host, kvarn_search::SearchEngineHandle) {
