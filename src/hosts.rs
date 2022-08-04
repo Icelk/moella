@@ -33,7 +33,7 @@ impl<O, F: Future<Output = O> + Unpin> Future for UnsafeSendSyncFuture<F> {
     }
 }
 
-pub fn icelk_extensions() -> Extensions {
+pub async fn icelk_extensions() -> Extensions {
     // Mount all extensions to server
     let mut extensions = kvarn_extensions::new();
 
@@ -196,6 +196,22 @@ pub fn icelk_extensions() -> Extensions {
         }),
     );
 
+    // if you have ulogger installed...
+    if tokio::fs::metadata("../ulogger")
+        .await
+        .map_or(false, |meta| meta.is_dir())
+    {
+        kvarn_extensions::php::mount_php_with_working_directory(
+            &mut extensions,
+            kvarn_extensions::Connection::UnixSocket(Path::new("/run/ulogger.sock")),
+            "/ulogger/",
+            "../ulogger",
+        )
+        .await
+        // UNWRAP: we just checked if it existed
+        .unwrap();
+    }
+
     kvarn_extensions::force_cache(
         &mut extensions,
         &[
@@ -216,6 +232,23 @@ pub fn icelk_extensions() -> Extensions {
             )
             .add("/api/*", CspRule::empty())
             .add("/ip", CspRule::empty())
+            .add(
+                "/ulogger/*",
+                CspRule::default()
+                    .default_src(
+                        CspValueSet::default()
+                            .uri("https://maps.googleapis.com")
+                            .uri("https://maps.gstatic.com"),
+                    )
+                    .img_src(
+                        CspValueSet::default()
+                            .uri("https://*.openstreetmap.org")
+                            .uri("https://maps.googleapis.com")
+                            .uri("https://maps.gstatic.com")
+                            .scheme("data".parse().unwrap()),
+                    )
+                    .script_src(CspValueSet::default().uri("https://maps.googleapis.com")),
+            )
             .arc(),
     );
 
