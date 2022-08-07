@@ -249,6 +249,10 @@ pub async fn icelk_extensions() -> Extensions {
                     )
                     .script_src(CspValueSet::default().uri("https://maps.googleapis.com")),
             )
+            .add(
+                "/admin",
+                CspRule::default().default_src(CspValueSet::default().unsafe_inline()),
+            )
             .arc(),
     );
 
@@ -281,6 +285,71 @@ pub async fn icelk_extensions() -> Extensions {
             }
         }));
     private_ical.mount(&mut extensions);
+
+    let auth_test_file = tokio::fs::read_to_string("auth-test.pem").await;
+    let auth_passwd_file = tokio::fs::read_to_string("auth-test.passwd").await;
+    if let (Ok(auth_test_file), Ok(auth_passwd_file)) = (auth_test_file, auth_passwd_file) {
+        let auth_test_key =
+            kvarn_auth::rsa::pkcs8::DecodePrivateKey::from_pkcs8_pem(&auth_test_file).unwrap();
+        let auth_config = kvarn_auth::Builder::new()
+            .with_auth_page_name("/admin/auth")
+            .build::<(), _, _>(
+                move |user, password, _addr, _req| {
+                    let v = if user == "admin"
+                        && auth_passwd_file.lines().any(|line| line == password)
+                    {
+                        kvarn_auth::Validation::Authorized(kvarn_auth::AuthData::Number(0.))
+                    } else {
+                        kvarn_auth::Validation::Unauthorized
+                    };
+                    core::future::ready(v)
+                },
+                kvarn_auth::CryptoAlgo::RSASha256 {
+                    private_key: auth_test_key,
+                },
+            );
+        auth_config.mount(&mut extensions);
+        let login_status = auth_config.login_status();
+        extensions.add_prepare_single(
+            "/admin",
+            prepare!(
+                req,
+                _host,
+                _path,
+                addr,
+                move |login_status: kvarn_auth::LoginStatusClosure<()>| {
+                    let status = login_status(req, addr);
+                    let response = if let kvarn_auth::Validation::Authorized(_) = status {
+                        Response::new(Bytes::from_static(
+                            b"Congratulations, you cracked the login!",
+                        ))
+                    } else {
+                        static LOGIN_HTML: &str = r#"<!DOCTYPE html>
+<html>
+    <body>
+        <input id="username" placeholder="Username" />
+        <input id="password" placeholder="Password" />
+        <button id="login">Log in</button>
+        <script>
+            let username = document.getElementById("username")
+            let password = document.getElementById("password")
+            let login = document.getElementById("login")
+            login.addEventListener("click", () => {
+                let u = username.value
+                let p = password.value
+                fetch("/admin/auth", { method: "POST", body: `${u}\n${p}` })
+            })
+        </script>
+    </body>
+</html>
+"#;
+                        Response::new(Bytes::from_static(LOGIN_HTML.as_bytes()))
+                    };
+                    FatResponse::no_cache(response)
+                }
+            ),
+        );
+    }
 
     extensions
 }
