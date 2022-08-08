@@ -320,12 +320,21 @@ pub async fn icelk_extensions() -> Extensions {
                 move |login_status: kvarn_auth::LoginStatusClosure<()>| {
                     let status = login_status(req, addr);
                     let response = if let kvarn_auth::Validation::Authorized(_) = status {
-                        Response::new(Bytes::from_static(
-                            b"Congratulations, you cracked the login!",
-                        ))
+                        Response::builder()
+                            .header("content-type", "text/plain")
+                            .body(Bytes::from_static(
+                                "Congratulations, you cracked the login!\n\
+                            Please contact <main@icelk.dev> \
+                            for public recognition of your performance."
+                                    .as_bytes(),
+                            ))
+                            .unwrap()
                     } else {
                         static LOGIN_HTML: &str = r#"<!DOCTYPE html>
 <html>
+    <head>
+        <meta name="color-scheme" content="dark light">
+    </head>
     <body>
         <input id="username" placeholder="Username" />
         <input id="password" placeholder="Password" />
@@ -334,15 +343,19 @@ pub async fn icelk_extensions() -> Extensions {
             let username = document.getElementById("username")
             let password = document.getElementById("password")
             let login = document.getElementById("login")
-            login.addEventListener("click", () => {
+            login.addEventListener("click", async () => {
                 let u = username.value
                 let p = password.value
-                fetch("/admin/auth", { method: "POST", body: `${u}\n${p}` })
+                let response = await fetch("/admin/auth", { method: "POST", body: `${u}\n${p}` })
+                if (response.status === 200) {
+                    location.reload()
+                }
             })
         </script>
     </body>
 </html>
 "#;
+
                         Response::new(Bytes::from_static(LOGIN_HTML.as_bytes()))
                     };
                     FatResponse::no_cache(response)
