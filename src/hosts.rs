@@ -253,6 +253,7 @@ pub async fn icelk_extensions() -> Extensions {
                 "/admin",
                 CspRule::default().default_src(CspValueSet::default().unsafe_inline()),
             )
+            .add("/organization-game/*", CspRule::empty())
             .arc(),
     );
 
@@ -346,7 +347,8 @@ pub async fn icelk_extensions() -> Extensions {
             login.addEventListener("click", async () => {
                 let u = username.value
                 let p = password.value
-                let response = await fetch("/admin/auth", { method: "POST", body: `${u}\n${p}` })
+                let response = await fetch("/admin/auth",
+                    { method: "POST", body: `${u}\n${p}` })
                 if (response.status === 200) {
                     location.reload()
                 }
@@ -362,6 +364,94 @@ pub async fn icelk_extensions() -> Extensions {
                 }
             ),
         );
+    }
+
+    let aog_file = tokio::fs::read_to_string("aog.pem").await;
+    let aog_passwd_file = tokio::fs::read_to_string("aog.passwd").await;
+    if let (Ok(aog_file), Ok(aog_passwd_file)) = (aog_file, aog_passwd_file) {
+        let aog_key = kvarn_auth::rsa::pkcs8::DecodePrivateKey::from_pkcs8_pem(&aog_file).unwrap();
+        let accounts: HashMap<String, String> = aog_passwd_file
+            .lines()
+            .filter_map(|line| {
+                let (usr, pas) = line.split_once(' ')?;
+                Some((usr.to_owned(), pas.to_owned()))
+            })
+            .collect();
+        let auth_config = kvarn_auth::Builder::new()
+            .with_cookie_path("/organization-game/")
+            .with_auth_page_name("/organization-game/auth")
+            .with_show_auth_page_when_unauthorized("/organization-game/login")
+            .build::<(), _, _>(
+                move |user, password, _addr, _req| {
+                    let v = if accounts.get(user).map_or(false, |pass| pass == password) {
+                        kvarn_auth::Validation::Authorized(kvarn_auth::AuthData::Number(0.))
+                    } else {
+                        kvarn_auth::Validation::Unauthorized
+                    };
+                    core::future::ready(v)
+                },
+                kvarn_auth::CryptoAlgo::RSASha256 {
+                    private_key: aog_key,
+                },
+            );
+        auth_config.mount(&mut extensions);
+        let login_status = auth_config.login_status();
+        extensions.add_prepare_single(
+            "/organization-game/login",
+            prepare!(
+                req,
+                _host,
+                _path,
+                addr,
+                move |login_status: kvarn_auth::LoginStatusClosure<()>| {
+                    let status = login_status(req, addr);
+                    let response = if let kvarn_auth::Validation::Authorized(_) = status {
+                        Response::builder()
+                            .header("content-type", "text/plain")
+                            .body(Bytes::from_static("You are now logged in.".as_bytes()))
+                            .unwrap()
+                    } else {
+                        static LOGIN_HTML: &str = r#"<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="color-scheme" content="dark light">
+    </head>
+    <body>
+        <input id="username" placeholder="Username" />
+        <input id="password" placeholder="Password" />
+        <button id="login">Log in</button>
+        <script>
+            let username = document.getElementById("username")
+            let password = document.getElementById("password")
+            let login = document.getElementById("login")
+            login.addEventListener("click", async () => {
+                let u = username.value
+                let p = password.value
+                let response = await fetch("/organization-game/auth",
+                    { method: "POST", body: `${u}\n${p}` })
+                if (response.status === 200) {
+                    location.reload()
+                }
+            })
+        </script>
+    </body>
+</html>
+"#;
+
+                        Response::new(Bytes::from_static(LOGIN_HTML.as_bytes()))
+                    };
+                    FatResponse::no_cache(response)
+                }
+            ),
+        );
+        kvarn_extensions::ReverseProxy::base(
+            "/organization-game/",
+            kvarn_extensions::static_connection(kvarn_extensions::Connection::Tcp(
+                kvarn_extensions::localhost(4040),
+            )),
+            Duration::from_secs(10),
+        )
+        .mount(&mut extensions);
     }
 
     extensions

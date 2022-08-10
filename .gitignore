@@ -1,4 +1,4 @@
 /target
 *.pem
 mail-hosts.txt
-auth-test.passwd
+*.passwd
