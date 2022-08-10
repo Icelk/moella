@@ -2,3 +2,4 @@
 *.pem
 mail-hosts.txt
 *.passwd
+*.secret

@@ -23,7 +23,7 @@ the files for `icelk.dev` and `kvarn.org` in `../icelk.dev` and `../kvarn.org`, 
 
 # Development
 
-During development, this requires [Kvarn](https://github.com/Icelk/kvarn) to be cloned at `../kvarn` and [Kvarn Search](https://github.com/Icelk/kvarn-search) at `../kvarn-search`.
+During development, this requires [Kvarn](https://github.com/Icelk/kvarn) to be cloned at `../kvarn`, [Kvarn Search](https://github.com/Icelk/kvarn-search) at `../kvarn-search`, and [Kvarn Auth](https://github.com/Icelk/kvarn-auth) at `../kvarn-auth`.
 
 # Future
 

@@ -287,13 +287,12 @@ pub async fn icelk_extensions() -> Extensions {
         }));
     private_ical.mount(&mut extensions);
 
-    let auth_test_file = tokio::fs::read_to_string("auth-test.pem").await;
+    let auth_test_secret = tokio::fs::read("auth-test.secret").await;
     let auth_passwd_file = tokio::fs::read_to_string("auth-test.passwd").await;
-    if let (Ok(auth_test_file), Ok(auth_passwd_file)) = (auth_test_file, auth_passwd_file) {
-        let auth_test_key =
-            kvarn_auth::rsa::pkcs8::DecodePrivateKey::from_pkcs8_pem(&auth_test_file).unwrap();
+    if let (Ok(auth_test_secret), Ok(auth_passwd_file)) = (auth_test_secret, auth_passwd_file) {
         let auth_config = kvarn_auth::Builder::new()
             .with_auth_page_name("/admin/auth")
+            .with_cookie_path("/admin")
             .build::<(), _, _>(
                 move |user, password, _addr, _req| {
                     let v = if user == "admin"
@@ -305,8 +304,8 @@ pub async fn icelk_extensions() -> Extensions {
                     };
                     core::future::ready(v)
                 },
-                kvarn_auth::CryptoAlgo::RSASha256 {
-                    private_key: auth_test_key,
+                kvarn_auth::CryptoAlgo::EcdsaP256 {
+                    secret: auth_test_secret,
                 },
             );
         auth_config.mount(&mut extensions);
@@ -348,7 +347,7 @@ pub async fn icelk_extensions() -> Extensions {
                 let u = username.value
                 let p = password.value
                 let response = await fetch("/admin/auth",
-                    { method: "POST", body: `${u}\n${p}` })
+                    { method: "PUT", body: `${u}\n${p}` })
                 if (response.status === 200) {
                     location.reload()
                 }
@@ -366,10 +365,9 @@ pub async fn icelk_extensions() -> Extensions {
         );
     }
 
-    let aog_file = tokio::fs::read_to_string("aog.pem").await;
+    let aog_secret = tokio::fs::read("aog.secret").await;
     let aog_passwd_file = tokio::fs::read_to_string("aog.passwd").await;
-    if let (Ok(aog_file), Ok(aog_passwd_file)) = (aog_file, aog_passwd_file) {
-        let aog_key = kvarn_auth::rsa::pkcs8::DecodePrivateKey::from_pkcs8_pem(&aog_file).unwrap();
+    if let (Ok(aog_secret), Ok(aog_passwd_file)) = (aog_secret, aog_passwd_file) {
         let accounts: HashMap<String, String> = aog_passwd_file
             .lines()
             .filter_map(|line| {
@@ -390,9 +388,7 @@ pub async fn icelk_extensions() -> Extensions {
                     };
                     core::future::ready(v)
                 },
-                kvarn_auth::CryptoAlgo::RSASha256 {
-                    private_key: aog_key,
-                },
+                kvarn_auth::CryptoAlgo::EcdsaP256 { secret: aog_secret },
             );
         auth_config.mount(&mut extensions);
         let login_status = auth_config.login_status();
@@ -428,7 +424,7 @@ pub async fn icelk_extensions() -> Extensions {
                 let u = username.value
                 let p = password.value
                 let response = await fetch("/organization-game/auth",
-                    { method: "POST", body: `${u}\n${p}` })
+                    { method: "PUT", body: `${u}\n${p}` })
                 if (response.status === 200) {
                     location.reload()
                 }
