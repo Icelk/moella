@@ -1,6 +1,7 @@
 use comprash::ClientCachePreference;
 use internals::mime;
 use kvarn::prelude::*;
+use kvarn::websocket::{SinkExt, StreamExt};
 
 /// Bullshittery with some futures not being Sync.
 ///
@@ -193,6 +194,21 @@ pub async fn icelk_extensions() -> Extensions {
             FatResponse::no_cache(Response::new(addr.ip().to_string().into()))
                 .with_compress(comprash::CompressPreference::None)
                 .with_content_type(&mime::TEXT_PLAIN)
+        }),
+    );
+    extensions.add_prepare_single(
+        "/ws-ping",
+        prepare!(req, host, _path, _addr, {
+            kvarn::websocket::response(
+                req,
+                host,
+                response_pipe_fut!(response_pipe, _host, {
+                    let mut ws = kvarn::websocket::wrap(response_pipe).await;
+                    while let Some(Ok(message)) = ws.next().await {
+                        let _ = ws.send(message).await;
+                    }
+                }),
+            ).await
         }),
     );
 
