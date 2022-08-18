@@ -30,7 +30,7 @@ trust-dns-resolver = { version = "0.20", features = ["dns-over-tls", "dns-over-r
 
 [features]
 default = ["mt", "https", "interactive", "kvarn/default"]
-production = ["mt", "https", "kvarn/all-http", "kvarn/all-compression", "kvarn/graceful-shutdown"]
+production = ["mt", "https", "kvarn/all-http", "kvarn/all-compression", "kvarn/graceful-shutdown", "kvarn/websocket"]
 
 # Interactive program
 interactive = []
