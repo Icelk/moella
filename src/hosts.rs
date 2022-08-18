@@ -298,7 +298,7 @@ pub async fn icelk_extensions() -> Extensions {
                     let v = if user == "admin"
                         && auth_passwd_file.lines().any(|line| line == password)
                     {
-                        kvarn_auth::Validation::Authorized(kvarn_auth::AuthData::Number(0.))
+                        kvarn_auth::Validation::Authorized(kvarn_auth::AuthData::None)
                     } else {
                         kvarn_auth::Validation::Unauthorized
                     };
@@ -347,7 +347,7 @@ pub async fn icelk_extensions() -> Extensions {
                 let u = username.value
                 let p = password.value
                 let response = await fetch("/admin/auth",
-                    { method: "PUT", body: `${u}\n${p}` })
+                    { method: "PUT", body: `${u.length}\n${u}${p}` })
                 if (response.status === 200) {
                     location.reload()
                 }
@@ -382,7 +382,7 @@ pub async fn icelk_extensions() -> Extensions {
             .build::<(), _, _>(
                 move |user, password, _addr, _req| {
                     let v = if accounts.get(user).map_or(false, |pass| pass == password) {
-                        kvarn_auth::Validation::Authorized(kvarn_auth::AuthData::Number(0.))
+                        kvarn_auth::Validation::Authorized(kvarn_auth::AuthData::None)
                     } else {
                         kvarn_auth::Validation::Unauthorized
                     };
@@ -424,7 +424,7 @@ pub async fn icelk_extensions() -> Extensions {
                 let u = username.value
                 let p = password.value
                 let response = await fetch("/organization-game/auth",
-                    { method: "PUT", body: `${u}\n${p}` })
+                    { method: "PUT", body: `${u.length}\n${u}${p}` })
                 if (response.status === 200) {
                     location.reload()
                 }
