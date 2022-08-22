@@ -208,7 +208,8 @@ pub async fn icelk_extensions() -> Extensions {
                         let _ = ws.send(message).await;
                     }
                 }),
-            ).await
+            )
+            .await
         }),
     );
 
@@ -270,6 +271,10 @@ pub async fn icelk_extensions() -> Extensions {
                 CspRule::default().default_src(CspValueSet::default().unsafe_inline()),
             )
             .add("/organization-game/*", CspRule::empty())
+            .add(
+                "/agde-test/*",
+                CspRule::default().script_src(CspValueSet::default().unsafe_inline().unsafe_eval()),
+            )
             .arc(),
     );
 
@@ -465,6 +470,165 @@ pub async fn icelk_extensions() -> Extensions {
         )
         .mount(&mut extensions);
     }
+
+    // WS auth
+    //
+    // agde_tokio client on the WS. Make sure the auth allows all connections from 127.0.0.1
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            let options =
+                agde_tokio::options_fs(true, agde_tokio::Compression::Zstd, "agde-data".into())
+                    .await
+                    .expect("failed to read file system metadata");
+            let options = options
+                .with_startup_duration(Duration::from_secs(5))
+                .with_sync_interval(Duration::from_secs(30))
+                .with_periodic_interval(Duration::from_secs(120))
+                .with_no_public_storage();
+
+            let options = options.arc();
+
+            let log_lifetime = Duration::from_secs(60);
+
+            let manager = agde_tokio::agde::Manager::new(true, 0, log_lifetime, 512);
+
+            #[cfg(not(feature = "high_ports"))]
+            let url = "wss://icelk.dev/agde-ws";
+            #[cfg(feature = "high_ports")]
+            let url = "ws://localhost:8080/agde-ws";
+
+            match agde_tokio::agde_io::run(manager, options, || agde_tokio::connect_ws(url)).await {
+                Ok(handle) => {
+                    // `TODO`: investigate multiple handlers
+                    agde_tokio::catch_ctrlc(handle.state().clone()).await;
+
+                    let r = handle.wait().await;
+
+                    if let Err(err) = r {
+                        error!("agde: Got error when running: {err}. Trying to reconnect in 10s.");
+                        tokio::time::sleep(Duration::from_secs(10)).await;
+                    } else {
+                        info!("agde-tokio considers itself done.")
+                    }
+                }
+                Err(err) => {
+                    error!("Got error: {err}. Trying to reconnect in 10s.");
+                }
+            }
+            tokio::time::sleep(Duration::from_secs(10)).await;
+        }
+    });
+    let (ws_broadcaster, _) = tokio::sync::broadcast::channel(1024);
+    extensions.add_prepare_single(
+        "/agde-ws",
+        prepare!(
+            req,
+            host,
+            _path,
+            addr,
+            move |ws_broadcaster: tokio::sync::broadcast::Sender<Arc<(Vec<u8>, agde::Uuid, agde::Recipient)>>| {
+                let ws_broadcaster = ws_broadcaster.clone();
+                websocket::response(
+                    req,
+                    host,
+                    response_pipe_fut!(
+                        pipe,
+                        _host,
+                        move |ws_broadcaster: tokio::sync::broadcast::Sender<
+                            Arc<(Vec<u8>, agde::Uuid, agde::Recipient)>,
+                        >, addr: SocketAddr| {
+                            use futures_util::FutureExt;
+                            let mut listener = ws_broadcaster.subscribe();
+                            let mut ws = websocket::wrap(pipe).await;
+                            let mut uuid = None;
+
+                            loop {
+                                futures_util::select! {
+                                    msg = listener.recv().fuse() => {
+                                        let msg = msg.expect("ws broadcast got backlogged or unexpectedly closed");
+                                        let (msg, sender, recipient) = &*msg;
+                                        let recipient_matches= *recipient == agde::Recipient::All
+                                            || if let agde::Recipient::Selected(pier) = recipient {
+                                                uuid.map_or(false, |uuid| pier.uuid() == uuid)
+                                            } else {
+                                                false
+                                            };
+
+                                        // don't ping pong message!
+                                        if Some(*sender) == uuid || !recipient_matches {
+                                            continue;
+                                        }
+                                        let data = (*msg).clone();
+                                        let msg = websocket::tungstenite::Message::Binary(data);
+                                        if ws.send(msg).await.is_err() {
+                                            if let Some(uuid) = uuid {
+                                                ws_broadcaster.send(
+                                                    Arc::new((
+                                                        agde_tokio::agde_io::to_compressed_bin(&agde::Message::new(
+                                                            agde::MessageKind::Disconnect,
+                                                            uuid,
+                                                            agde::Uuid::new()
+                                                        )),
+                                                        uuid,
+                                                        agde::Recipient::All,
+                                                    ))
+                                                ).unwrap();
+                                            }
+                                            break;
+                                        }
+                                    },
+                                    incomming = ws.next() => {
+                                        let incomming = if let Some(Ok(msg)) = incomming {
+                                            msg
+                                        } else {
+                                            if let Some(uuid) = uuid {
+                                                ws_broadcaster.send(
+                                                    Arc::new((
+                                                        agde_tokio::agde_io::to_compressed_bin(&agde::Message::new(
+                                                            agde::MessageKind::Disconnect,
+                                                            uuid,
+                                                            agde::Uuid::new()
+                                                        )),
+                                                        uuid,
+                                                        agde::Recipient::All,
+                                                    ))
+                                                ).unwrap();
+                                            }
+                                            break;
+                                        };
+                                        let msg = match incomming {
+                                            websocket::tungstenite::Message::Binary(msg) => msg,
+                                            websocket::tungstenite::Message::Text(text) => {
+                                                info!("Agde pier with UUID {uuid:?} send a text message: {text}");
+                                                continue;
+                                            }
+                                            _ => continue,
+                                        };
+                                        // `TODO` change agde protocol to add magic number to Bin
+                                        // format, add version, recipient, and sender.
+                                        let agde_msg = if let Ok(msg) = agde_tokio::agde_io::from_compressed_bin(&msg) {
+                                            msg
+                                        } else {
+                                            warn!("Received invalid message from UUID {uuid:?} from {addr}");
+                                            continue;
+                                        };
+                                        if let agde::MessageKind::Hello(cap) = agde_msg.inner() {
+                                            uuid = Some(cap.uuid());
+                                        }
+                                        if let Some(uuid) = uuid {
+                                            ws_broadcaster.send(Arc::new((msg, uuid, agde_msg.recipient()))).unwrap();
+                                        }
+                                    }
+                                };
+                            }
+                        }
+                    ),
+                )
+                .await
+            }
+        ),
+    );
 
     extensions
 }
