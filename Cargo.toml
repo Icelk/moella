@@ -21,7 +21,7 @@ kvarn-search = { path = "../kvarn-search" }
 # kvarn-search = "0.1"
 kvarn-auth = { path = "../kvarn-auth" }
 # kvarn-auth = "0.1"
-agde-tokio = { path = "../agde/agde-tokio" }
+agde-tokio = { path = "../agde/agde-tokio", default-features = false }
 agde = { path = "../agde/agde" }
 http = "0.2"
 env_logger = "0.9"
