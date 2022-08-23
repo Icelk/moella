@@ -2,13 +2,15 @@ use kvarn::prelude::*;
 
 pub mod hosts;
 
+#[allow(clippy::await_holding_lock)] // see bottom of function: this is the termination of the application
 #[cfg_attr(feature = "mt", tokio::main)]
 #[cfg_attr(not(feature = "mt"), tokio::main(flavor = "current_thread"))]
 async fn main() {
     let env_log = env_logger::Env::new().filter_or("KVARN_LOG", "rustls=off,warn");
     env_logger::Builder::from_env(env_log).init();
 
-    let (icelk_host, icelk_se) = hosts::icelk(hosts::icelk_extensions().await).await;
+    let (icelk_ext, agde_handle, agde_task) = hosts::icelk_extensions().await;
+    let (icelk_host, icelk_se) = hosts::icelk(icelk_ext).await;
     let icelk_doc_host = hosts::icelk_doc(hosts::icelk_doc_extensions());
     let (kvarn_host, kvarn_se) = hosts::kvarn(hosts::kvarn_extensions()).await;
     let kvarn_doc_host = hosts::kvarn_doc(hosts::kvarn_doc_extensions());
@@ -134,4 +136,13 @@ async fn main() {
             }
         };
     }
+    if let Some(handle) = &mut *agde_handle.lock().unwrap() {
+        let mut manager = handle.manager.lock().await;
+        if let Err(err) =
+            agde_tokio::shutdown(&mut manager, &handle.options, &handle.platform, handle).await
+        {
+            error!("Got error when shutting agde down: {err:?}");
+        }
+    };
+    agde_task.abort();
 }
