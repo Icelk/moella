@@ -37,7 +37,6 @@ impl<O, F: Future<Output = O> + Unpin> Future for UnsafeSendSyncFuture<F> {
 pub async fn icelk_extensions() -> (
     Extensions,
     Arc<std::sync::Mutex<Option<agde_tokio::agde_io::StateHandle<agde_tokio::Native>>>>,
-    tokio::task::JoinHandle<()>,
 ) {
     // Mount all extensions to server
     let mut extensions = kvarn_extensions::new();
@@ -478,7 +477,7 @@ pub async fn icelk_extensions() -> (
     // WS auth
     let agde_handle = Arc::new(std::sync::Mutex::new(None));
     let agde_moved_handle = agde_handle.clone();
-    let agde_task = tokio::spawn(async move {
+    tokio::spawn(async move {
         tokio::time::sleep(Duration::from_secs(4)).await;
         loop {
             let options =
@@ -504,7 +503,9 @@ pub async fn icelk_extensions() -> (
 
             match agde_tokio::agde_io::run(manager, options, || agde_tokio::connect_ws(url)).await {
                 Ok(handle) => {
-                    *agde_moved_handle.lock().unwrap() = Some(handle.state().clone());
+                    {
+                        *agde_moved_handle.lock().unwrap() = Some(handle.state().clone());
+                    }
                     // `TODO`: investigate multiple handlers
                     agde_tokio::catch_ctrlc(handle.state().clone()).await;
 
@@ -635,7 +636,7 @@ pub async fn icelk_extensions() -> (
         ),
     );
 
-    (extensions, agde_handle, agde_task)
+    (extensions, agde_handle)
 }
 pub async fn icelk(extensions: Extensions) -> (Host, kvarn_search::SearchEngineHandle) {
     let mut host = host_from_name("icelk.dev", "../icelk.dev/", extensions);
