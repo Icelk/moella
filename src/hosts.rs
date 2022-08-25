@@ -479,8 +479,8 @@ pub async fn icelk_extensions() -> (
     let agde_handle = Arc::new(std::sync::Mutex::new(None));
     let agde_moved_handle = agde_handle.clone();
     let agde_task = tokio::spawn(async move {
+        tokio::time::sleep(Duration::from_secs(4)).await;
         loop {
-            tokio::time::sleep(Duration::from_secs(1)).await;
             let options =
                 agde_tokio::options_fs(true, agde_tokio::Compression::Zstd, "agde-data".into())
                     .await
