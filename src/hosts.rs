@@ -611,6 +611,7 @@ pub fn kvarn_doc(extensions: Extensions) -> Host {
 
 pub fn agde(
     mut extensions: Extensions,
+    spawn_agde: bool,
 ) -> (
     Host,
     Arc<std::sync::Mutex<Option<agde_tokio::agde_io::StateHandle<agde_tokio::Native>>>>,
@@ -632,54 +633,69 @@ pub fn agde(
     // WS auth
     let agde_handle = Arc::new(std::sync::Mutex::new(None));
     let agde_moved_handle = agde_handle.clone();
-    tokio::spawn(async move {
-        tokio::time::sleep(Duration::from_secs(4)).await;
-        loop {
-            let options =
-                agde_tokio::options_fs(true, agde_tokio::Compression::Zstd, "agde-data".into())
-                    .await
-                    .expect("failed to read file system metadata");
-            let options = options
-                .with_startup_duration(Duration::from_secs(5))
-                .with_sync_interval(Duration::from_secs(30))
-                .with_periodic_interval(Duration::from_secs(120))
-                .with_no_public_storage();
+    if spawn_agde {
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(4)).await;
+            loop {
+                let options =
+                    agde_tokio::options_fs(true, agde_tokio::Compression::Zstd, "agde-data".into())
+                        .await
+                        .expect("failed to read file system metadata");
+                let options = options
+                    .with_startup_duration(Duration::from_secs(5))
+                    .with_sync_interval(Duration::from_secs(30))
+                    .with_periodic_interval(Duration::from_secs(120))
+                    .with_no_public_storage();
 
-            let options = options.arc();
+                let options = options.arc();
 
-            let log_lifetime = Duration::from_secs(60);
+                let log_lifetime = Duration::from_secs(60);
 
-            let manager = agde_tokio::agde::Manager::new(true, 0, log_lifetime, 512);
+                let manager = agde_tokio::agde::Manager::new(true, 0, log_lifetime, 512);
 
-            #[cfg(not(feature = "high_ports"))]
-            let url = "wss://icelk.dev/agde-ws";
-            #[cfg(feature = "high_ports")]
-            let url = "ws://localhost:8080/agde-ws";
+                #[cfg(not(feature = "high_ports"))]
+                let url = "wss://icelk.dev/agde-ws";
+                #[cfg(feature = "high_ports")]
+                let url = "ws://localhost:8080/agde-ws";
 
-            match agde_tokio::agde_io::run(manager, options, || agde_tokio::connect_ws(url)).await {
-                Ok(handle) => {
-                    {
-                        *agde_moved_handle.lock().unwrap() = Some(handle.state().clone());
+                match agde_tokio::agde_io::run(manager, options, || {
+                    agde_tokio::connect_ws(url, {
+                        #[cfg(not(feature = "high_ports"))]
+                        {
+                            Some("agde.dev")
+                        }
+                        #[cfg(feature = "high_ports")]
+                        None
+                    })
+                })
+                .await
+                {
+                    Ok(handle) => {
+                        {
+                            *agde_moved_handle.lock().unwrap() = Some(handle.state().clone());
+                        }
+                        // `TODO`: investigate multiple handlers
+                        agde_tokio::catch_ctrlc(handle.state().clone()).await;
+
+                        let r = handle.wait().await;
+
+                        if let Err(err) = r {
+                            error!(
+                                "agde: Got error when running: {err}. Trying to reconnect in 10s."
+                            );
+                            tokio::time::sleep(Duration::from_secs(10)).await;
+                        } else {
+                            info!("agde-tokio considers itself done.")
+                        }
                     }
-                    // `TODO`: investigate multiple handlers
-                    agde_tokio::catch_ctrlc(handle.state().clone()).await;
-
-                    let r = handle.wait().await;
-
-                    if let Err(err) = r {
-                        error!("agde: Got error when running: {err}. Trying to reconnect in 10s.");
-                        tokio::time::sleep(Duration::from_secs(10)).await;
-                    } else {
-                        info!("agde-tokio considers itself done.")
+                    Err(err) => {
+                        error!("Got error: {err}. Trying to reconnect in 10s.");
                     }
                 }
-                Err(err) => {
-                    error!("Got error: {err}. Trying to reconnect in 10s.");
-                }
+                tokio::time::sleep(Duration::from_secs(10)).await;
             }
-            tokio::time::sleep(Duration::from_secs(10)).await;
-        }
-    });
+        });
+    }
     let (ws_broadcaster, _) = tokio::sync::broadcast::channel(1024);
     extensions.add_prepare_single(
         "/agde-ws",
@@ -703,6 +719,7 @@ pub fn agde(
                             let mut listener = ws_broadcaster.subscribe();
                             let mut ws = websocket::wrap(pipe).await;
                             let mut uuid = None;
+                            let mut disconnected = false;
 
                             loop {
                                 futures_util::select! {
@@ -723,18 +740,21 @@ pub fn agde(
                                         let data = (*msg).clone();
                                         let msg = websocket::tungstenite::Message::Binary(data);
                                         if ws.send(msg).await.is_err() {
-                                            if let Some(uuid) = uuid {
-                                                ws_broadcaster.send(
-                                                    Arc::new((
-                                                        agde_tokio::agde_io::to_compressed_bin(&agde::Message::new(
-                                                            agde::MessageKind::Disconnect,
+                                            if !disconnected {
+                                                if let Some(uuid) = uuid {
+                                                    ws_broadcaster.send(
+                                                        Arc::new((
+                                                            agde_tokio::agde_io::to_compressed_bin(&agde::Message::new(
+                                                                agde::MessageKind::Disconnect,
+                                                                uuid,
+                                                                agde::Uuid::new()
+                                                            )),
                                                             uuid,
-                                                            agde::Uuid::new()
-                                                        )),
-                                                        uuid,
-                                                        agde::Recipient::All,
-                                                    ))
-                                                ).unwrap();
+                                                            agde::Recipient::All,
+                                                        ))
+                                                    ).unwrap();
+                                                }
+                                                disconnected = true;
                                             }
                                             break;
                                         }
@@ -743,18 +763,21 @@ pub fn agde(
                                         let incomming = if let Some(Ok(msg)) = incomming {
                                             msg
                                         } else {
-                                            if let Some(uuid) = uuid {
-                                                ws_broadcaster.send(
-                                                    Arc::new((
-                                                        agde_tokio::agde_io::to_compressed_bin(&agde::Message::new(
-                                                            agde::MessageKind::Disconnect,
+                                            if !disconnected {
+                                                if let Some(uuid) = uuid {
+                                                    ws_broadcaster.send(
+                                                        Arc::new((
+                                                            agde_tokio::agde_io::to_compressed_bin(&agde::Message::new(
+                                                                agde::MessageKind::Disconnect,
+                                                                uuid,
+                                                                agde::Uuid::new()
+                                                            )),
                                                             uuid,
-                                                            agde::Uuid::new()
-                                                        )),
-                                                        uuid,
-                                                        agde::Recipient::All,
-                                                    ))
-                                                ).unwrap();
+                                                            agde::Recipient::All,
+                                                        ))
+                                                    ).unwrap();
+                                                }
+                                                disconnected = true;
                                             }
                                             break;
                                         };
@@ -767,7 +790,8 @@ pub fn agde(
                                             _ => continue,
                                         };
                                         // `TODO` change agde protocol to add magic number to Bin
-                                        // format, add version, recipient, and sender.
+                                        // format, add version, recipient, sender, and if
+                                        // dsconnecting.
                                         let agde_msg = if let Ok(msg) = agde_tokio::agde_io::from_compressed_bin(&msg) {
                                             msg
                                         } else {
@@ -776,6 +800,9 @@ pub fn agde(
                                         };
                                         if let agde::MessageKind::Hello(cap) = agde_msg.inner() {
                                             uuid = Some(cap.uuid());
+                                        }
+                                        if let agde::MessageKind::Disconnect = agde_msg.inner() {
+                                            disconnected = true;
                                         }
                                         if let Some(uuid) = uuid {
                                             ws_broadcaster.send(Arc::new((msg, uuid, agde_msg.recipient()))).unwrap();
@@ -821,7 +848,6 @@ pub fn agde(
                                         if from == *addr {
                                             continue;
                                         }
-                                        println!("Send to {addr}");
                                         let msg = websocket::tungstenite::Message::Text(data);
                                         let _ = ws.send(msg).await.is_err();
                                     },
@@ -840,7 +866,6 @@ pub fn agde(
                                         if msg.len() > 100 {
                                             continue;
                                         }
-                                        println!("from {addr}");
                                         ws_broadcaster.send(Arc::new((msg, *addr))).unwrap();
                                     }
                                 };
