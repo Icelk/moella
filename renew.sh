@@ -14,3 +14,4 @@ chmod -R g-r,o-r ~/.private/certs
 rsync -rLPh --exclude target --exclude .git . server:/home/icelk/kvarn/kvarn-reference/
 # Restart kvarn
 ssh root@server "systemctl reload kvarn; systemctl restart unbound postfix"
+ssh root@server "/root/scripts/sin-dovecot-postfix.sh"
