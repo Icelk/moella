@@ -9,12 +9,12 @@ async fn main() {
     let env_log = env_logger::Env::new().filter_or("KVARN_LOG", "rustls=off,warn");
     env_logger::Builder::from_env(env_log).init();
 
-    let (icelk_ext, agde_handle) = hosts::icelk_extensions().await;
+    let icelk_ext = hosts::icelk_extensions().await;
     let (icelk_host, icelk_se) = hosts::icelk(icelk_ext).await;
     let icelk_doc_host = hosts::icelk_doc(hosts::icelk_doc_extensions());
     let (kvarn_host, kvarn_se) = hosts::kvarn(hosts::kvarn_extensions()).await;
     let kvarn_doc_host = hosts::kvarn_doc(hosts::kvarn_doc_extensions());
-    let agde_host = hosts::agde(hosts::kvarn_extensions());
+    let (agde_host, agde_handle) = hosts::agde(hosts::kvarn_extensions());
     let icelk_bitwarden_host = hosts::icelk_bitwarden(hosts::icelk_bitwarden_extensions());
 
     let host = std::env::args().nth(1);

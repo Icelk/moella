@@ -34,10 +34,7 @@ impl<O, F: Future<Output = O> + Unpin> Future for UnsafeSendSyncFuture<F> {
     }
 }
 
-pub async fn icelk_extensions() -> (
-    Extensions,
-    Arc<std::sync::Mutex<Option<agde_tokio::agde_io::StateHandle<agde_tokio::Native>>>>,
-) {
+pub async fn icelk_extensions() -> Extensions {
     // Mount all extensions to server
     let mut extensions = kvarn_extensions::new();
 
@@ -274,10 +271,6 @@ pub async fn icelk_extensions() -> (
                 CspRule::default().default_src(CspValueSet::default().unsafe_inline()),
             )
             .add("/organization-game/*", CspRule::empty())
-            .add(
-                "/agde-test/*",
-                CspRule::default().script_src(CspValueSet::default().unsafe_inline().unsafe_eval()),
-            )
             .arc(),
     );
 
@@ -474,6 +467,168 @@ pub async fn icelk_extensions() -> (
         .mount(&mut extensions);
     }
 
+    extensions
+}
+pub async fn icelk(extensions: Extensions) -> (Host, kvarn_search::SearchEngineHandle) {
+    let mut host = host_from_name("icelk.dev", "../icelk.dev/", extensions);
+    host.disable_client_cache().disable_server_cache();
+
+    let se_options = kvarn_search::Options {
+        kind: kvarn_search::IndexKind::Lossless,
+        ignore_paths: vec![Uri::from_static("/rsync-ignore")],
+        ..Default::default()
+    };
+    let se_handle = kvarn_search::mount_search(&mut host.extensions, "/search", se_options).await;
+    se_handle.index_all(&host).await;
+
+    (host, se_handle)
+}
+
+pub fn icelk_doc_extensions() -> Extensions {
+    let mut extensions = Extensions::new();
+
+    extensions.add_present_internal("tmpl", Box::new(kvarn_extensions::templates_ext));
+
+    kvarn_extensions::force_cache(
+        &mut extensions,
+        &[
+            (".html", ClientCachePreference::None),
+            (".woff2", ClientCachePreference::Full),
+            (".woff", ClientCachePreference::Full),
+            (".svg", ClientCachePreference::Changing),
+            (".js", ClientCachePreference::Changing),
+            (".css", ClientCachePreference::Changing),
+        ],
+    );
+
+    extensions.with_csp(
+        Csp::empty()
+            .add(
+                "*",
+                CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org")),
+            )
+            .arc(),
+    );
+    extensions
+}
+pub fn icelk_doc(extensions: Extensions) -> Host {
+    let mut host = host_from_name("doc.icelk.dev", "../icelk.dev/doc/", extensions);
+
+    host.disable_server_cache().disable_client_cache();
+
+    host
+}
+
+pub fn kvarn_extensions() -> Extensions {
+    let mut extensions = kvarn_extensions::new();
+    kvarn_extensions::force_cache(
+        &mut extensions,
+        &[
+            (".png", ClientCachePreference::Changing),
+            (".woff2", ClientCachePreference::Full),
+            (".woff", ClientCachePreference::Full),
+            (".svg", ClientCachePreference::Changing),
+            ("/highlight.js/", ClientCachePreference::Full),
+        ],
+    );
+
+    let kvarn_cors = Cors::empty()
+        .add(
+            "/logo.svg",
+            CorsAllowList::new(Duration::from_secs(60 * 60 * 24 * 14))
+                .add_origin("https://github.com")
+                .add_origin("https://doc.kvarn.org"),
+        )
+        .add(
+            "/favicon.svg",
+            CorsAllowList::new(Duration::from_secs(60 * 60 * 24 * 14))
+                .add_origin("https://doc.kvarn.org"),
+        )
+        .arc();
+    extensions.with_cors(kvarn_cors);
+    extensions
+}
+pub async fn kvarn(extensions: Extensions) -> (Host, kvarn_search::SearchEngineHandle) {
+    let mut host = host_from_name("kvarn.org", "../kvarn.org/", extensions);
+
+    host.disable_client_cache().disable_server_cache();
+
+    let se_options = kvarn_search::Options {
+        kind: kvarn_search::IndexKind::Lossless,
+        ..Default::default()
+    };
+    let se_handle = kvarn_search::mount_search(&mut host.extensions, "/search", se_options).await;
+    se_handle.index_all(&host).await;
+
+    (host, se_handle)
+}
+
+pub fn kvarn_doc_extensions() -> Extensions {
+    let mut extensions = Extensions::new();
+
+    kvarn_extensions::force_cache(
+        &mut extensions,
+        &[
+            (".html", ClientCachePreference::None),
+            (".woff2", ClientCachePreference::Full),
+            (".woff", ClientCachePreference::Full),
+            (".svg", ClientCachePreference::Changing),
+            (".js", ClientCachePreference::Changing),
+            (".css", ClientCachePreference::Changing),
+        ],
+    );
+
+    extensions.add_prepare_single(
+        "/index.html",
+        prepare!(_, _, _, _, {
+            let response = Response::builder()
+                .status(StatusCode::PERMANENT_REDIRECT)
+                .header("location", "kvarn/")
+                .body(Bytes::new())
+                .expect("we know this is ok.");
+            FatResponse::cache(response)
+        }),
+    );
+
+    extensions.with_csp(
+        Csp::empty()
+            .add(
+                "*",
+                CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org")),
+            )
+            .arc(),
+    );
+    extensions
+}
+pub fn kvarn_doc(extensions: Extensions) -> Host {
+    let mut host = host_from_name("doc.kvarn.org", "../kvarn/target/doc/", extensions);
+
+    host.options.set_public_data_dir(".");
+    host.disable_server_cache().disable_client_cache();
+
+    host
+}
+
+pub fn agde(
+    mut extensions: Extensions,
+) -> (
+    Host,
+    Arc<std::sync::Mutex<Option<agde_tokio::agde_io::StateHandle<agde_tokio::Native>>>>,
+) {
+    extensions.add_prepare_single(
+        "/index.html",
+        prepare!(_, _, _, _, {
+            FatResponse::no_cache(
+                Response::builder()
+                    .status(StatusCode::TEMPORARY_REDIRECT)
+                    .header("location", "https://github.com/Icelk/agde/")
+                    .body(Bytes::new())
+                    .unwrap(),
+            )
+            .with_server_cache(comprash::ServerCachePreference::Full)
+        }),
+    );
+
     // WS auth
     let agde_handle = Arc::new(std::sync::Mutex::new(None));
     let agde_moved_handle = agde_handle.clone();
@@ -642,8 +797,8 @@ pub async fn icelk_extensions() -> (
             req,
             host,
             _path,
-            _addr,
-            move |ws_broadcaster: tokio::sync::broadcast::Sender<Arc<String>>| {
+            addr,
+            move |ws_broadcaster: tokio::sync::broadcast::Sender<Arc<(String, SocketAddr)>>| {
                 let ws_broadcaster = ws_broadcaster.clone();
                 websocket::response(
                     req,
@@ -652,8 +807,8 @@ pub async fn icelk_extensions() -> (
                         pipe,
                         _host,
                         move |ws_broadcaster: tokio::sync::broadcast::Sender<
-                            Arc<String>,
-                        >| {
+                            Arc<(String, SocketAddr)>,
+                        >, addr: SocketAddr| {
                             use futures_util::FutureExt;
                             let mut listener = ws_broadcaster.subscribe();
                             let mut ws = websocket::wrap(pipe).await;
@@ -662,7 +817,11 @@ pub async fn icelk_extensions() -> (
                                 futures_util::select! {
                                     msg = listener.recv().fuse() => {
                                         let msg = msg.expect("ws broadcast got backlogged or unexpectedly closed");
-                                        let data = (*msg).clone();
+                                        let (data, from) = (*msg).clone();
+                                        if from == *addr {
+                                            continue;
+                                        }
+                                        println!("Send to {addr}");
                                         let msg = websocket::tungstenite::Message::Text(data);
                                         let _ = ws.send(msg).await.is_err();
                                     },
@@ -681,7 +840,8 @@ pub async fn icelk_extensions() -> (
                                         if msg.len() > 100 {
                                             continue;
                                         }
-                                        ws_broadcaster.send(Arc::new(msg)).unwrap();
+                                        println!("from {addr}");
+                                        ws_broadcaster.send(Arc::new((msg, *addr))).unwrap();
                                     }
                                 };
                             }
@@ -693,170 +853,20 @@ pub async fn icelk_extensions() -> (
         ),
     );
 
-    (extensions, agde_handle)
-}
-pub async fn icelk(extensions: Extensions) -> (Host, kvarn_search::SearchEngineHandle) {
-    let mut host = host_from_name("icelk.dev", "../icelk.dev/", extensions);
-    host.disable_client_cache().disable_server_cache();
-
-    let se_options = kvarn_search::Options {
-        kind: kvarn_search::IndexKind::Lossless,
-        ignore_paths: vec![Uri::from_static("/rsync-ignore")],
-        ..Default::default()
-    };
-    let se_handle = kvarn_search::mount_search(&mut host.extensions, "/search", se_options).await;
-    se_handle.index_all(&host).await;
-
-    (host, se_handle)
-}
-
-pub fn icelk_doc_extensions() -> Extensions {
-    let mut extensions = Extensions::new();
-
-    extensions.add_present_internal("tmpl", Box::new(kvarn_extensions::templates_ext));
-
-    kvarn_extensions::force_cache(
-        &mut extensions,
-        &[
-            (".html", ClientCachePreference::None),
-            (".woff2", ClientCachePreference::Full),
-            (".woff", ClientCachePreference::Full),
-            (".svg", ClientCachePreference::Changing),
-            (".js", ClientCachePreference::Changing),
-            (".css", ClientCachePreference::Changing),
-        ],
-    );
-
     extensions.with_csp(
-        Csp::empty()
+        Csp::default()
             .add(
-                "*",
-                CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org")),
+                "/demo/worker.js",
+                CspRule::default().script_src(CspValueSet::default().unsafe_eval()),
             )
             .arc(),
-    );
-    extensions
-}
-pub fn icelk_doc(extensions: Extensions) -> Host {
-    let mut host = host_from_name("doc.icelk.dev", "../icelk.dev/doc/", extensions);
-
-    host.disable_server_cache().disable_client_cache();
-
-    host
-}
-
-pub fn kvarn_extensions() -> Extensions {
-    let mut extensions = kvarn_extensions::new();
-    kvarn_extensions::force_cache(
-        &mut extensions,
-        &[
-            (".png", ClientCachePreference::Changing),
-            (".woff2", ClientCachePreference::Full),
-            (".woff", ClientCachePreference::Full),
-            (".svg", ClientCachePreference::Changing),
-            ("/highlight.js/", ClientCachePreference::Full),
-        ],
-    );
-
-    let kvarn_cors = Cors::empty()
-        .add(
-            "/logo.svg",
-            CorsAllowList::new(Duration::from_secs(60 * 60 * 24 * 14))
-                .add_origin("https://github.com")
-                .add_origin("https://doc.kvarn.org"),
-        )
-        .add(
-            "/favicon.svg",
-            CorsAllowList::new(Duration::from_secs(60 * 60 * 24 * 14))
-                .add_origin("https://doc.kvarn.org"),
-        )
-        .arc();
-    extensions.with_cors(kvarn_cors);
-    extensions
-}
-pub async fn kvarn(extensions: Extensions) -> (Host, kvarn_search::SearchEngineHandle) {
-    let mut host = host_from_name("kvarn.org", "../kvarn.org/", extensions);
-
-    host.disable_client_cache().disable_server_cache();
-
-    let se_options = kvarn_search::Options {
-        kind: kvarn_search::IndexKind::Lossless,
-        ..Default::default()
-    };
-    let se_handle = kvarn_search::mount_search(&mut host.extensions, "/search", se_options).await;
-    se_handle.index_all(&host).await;
-
-    (host, se_handle)
-}
-
-pub fn kvarn_doc_extensions() -> Extensions {
-    let mut extensions = Extensions::new();
-
-    kvarn_extensions::force_cache(
-        &mut extensions,
-        &[
-            (".html", ClientCachePreference::None),
-            (".woff2", ClientCachePreference::Full),
-            (".woff", ClientCachePreference::Full),
-            (".svg", ClientCachePreference::Changing),
-            (".js", ClientCachePreference::Changing),
-            (".css", ClientCachePreference::Changing),
-        ],
-    );
-
-    extensions.add_prepare_single(
-        "/index.html",
-        prepare!(_, _, _, _, {
-            let response = Response::builder()
-                .status(StatusCode::PERMANENT_REDIRECT)
-                .header("location", "kvarn/")
-                .body(Bytes::new())
-                .expect("we know this is ok.");
-            FatResponse::cache(response)
-        }),
-    );
-
-    extensions.with_csp(
-        Csp::empty()
-            .add(
-                "*",
-                CspRule::default().img_src(CspValueSet::default().uri("https://kvarn.org")),
-            )
-            .arc(),
-    );
-    extensions
-}
-pub fn kvarn_doc(extensions: Extensions) -> Host {
-    let mut host = host_from_name("doc.kvarn.org", "../kvarn/target/doc/", extensions);
-
-    host.options.set_public_data_dir(".");
-    host.disable_server_cache().disable_client_cache();
-
-    host
-}
-
-pub fn agde(mut extensions: Extensions) -> Host {
-    extensions.add_prepare_fn(
-        // allow Let's Encrypt requests through
-        Box::new(|req, _| !req.uri().path().starts_with("/.well-known")),
-        prepare!(_, _, _, _, {
-            FatResponse::no_cache(
-                Response::builder()
-                    .status(StatusCode::TEMPORARY_REDIRECT)
-                    .header("location", "https://github.com/Icelk/agde/")
-                    .body(Bytes::new())
-                    .unwrap(),
-            )
-            .with_server_cache(comprash::ServerCachePreference::Full)
-        }),
-        Id::new(0, "redirect to GitHub"),
     );
 
     let mut host = host_from_name("agde.dev", "../agde.dev/", extensions);
 
     host.disable_client_cache().disable_server_cache();
 
-    host
+    (host, agde_handle)
 }
 
 pub fn icelk_bitwarden_extensions() -> Extensions {
