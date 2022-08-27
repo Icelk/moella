@@ -635,14 +635,14 @@ pub fn agde(
     let agde_moved_handle = agde_handle.clone();
     if spawn_agde {
         tokio::spawn(async move {
-            tokio::time::sleep(Duration::from_secs(4)).await;
+            tokio::time::sleep(Duration::from_millis(200)).await;
             loop {
                 let options =
                     agde_tokio::options_fs(true, agde_tokio::Compression::Zstd, "agde-data".into())
                         .await
                         .expect("failed to read file system metadata");
                 let options = options
-                    .with_startup_duration(Duration::from_secs(5))
+                    .with_startup_duration(Duration::from_secs(0))
                     .with_sync_interval(Duration::from_secs(30))
                     .with_periodic_interval(Duration::from_secs(120))
                     .with_no_public_storage();
@@ -681,7 +681,7 @@ pub fn agde(
 
                         if let Err(err) = r {
                             error!(
-                                "agde: Got error when running: {err}. Trying to reconnect in 10s."
+                                "agde: Got error when running: {err}. Trying to reconnect in 1s."
                             );
                             tokio::time::sleep(Duration::from_secs(10)).await;
                         } else {
@@ -692,7 +692,7 @@ pub fn agde(
                         error!("Got error: {err}. Trying to reconnect in 10s.");
                     }
                 }
-                tokio::time::sleep(Duration::from_secs(10)).await;
+                tokio::time::sleep(Duration::from_secs(1)).await;
             }
         });
     }
