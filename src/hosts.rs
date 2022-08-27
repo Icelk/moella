@@ -654,27 +654,32 @@ pub fn agde(
                 let manager = agde_tokio::agde::Manager::new(true, 0, log_lifetime, 512);
 
                 #[cfg(not(feature = "high_ports"))]
-                let url = "wss://icelk.dev/agde-ws";
+                let url = "wss://agde.dev/agde-ws";
                 #[cfg(feature = "high_ports")]
                 let url = "ws://localhost:8080/agde-ws";
 
-                match agde_tokio::agde_io::run(manager, options, || {
-                    agde_tokio::connect_ws(url, {
-                        #[cfg(not(feature = "high_ports"))]
-                        {
-                            Some("agde.dev")
-                        }
-                        #[cfg(feature = "high_ports")]
-                        None
-                    })
-                })
+                match agde_tokio::agde_io::run(
+                    manager,
+                    options,
+                    || {
+                        agde_tokio::connect_ws(url, {
+                            #[cfg(not(feature = "high_ports"))]
+                            {
+                                Some("agde.dev")
+                            }
+                            #[cfg(feature = "high_ports")]
+                            None
+                        })
+                    },
+                    |_msg| {},
+                    || {},
+                )
                 .await
                 {
                     Ok(handle) => {
                         {
                             *agde_moved_handle.lock().unwrap() = Some(handle.state().clone());
                         }
-                        // `TODO`: investigate multiple handlers
                         agde_tokio::catch_ctrlc(handle.state().clone()).await;
 
                         let r = handle.wait().await;
