@@ -721,6 +721,8 @@ pub fn agde(
                             let mut uuid = None;
                             let mut disconnected = false;
 
+                            #[allow(unused_assignments)] // invalid lint, the disconnected = true
+                                                         // assignments are valid
                             loop {
                                 futures_util::select! {
                                     msg = listener.recv().fuse() => {
