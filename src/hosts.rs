@@ -824,66 +824,6 @@ pub fn agde(
             }
         ),
     );
-    let (ws_broadcaster, _) = tokio::sync::broadcast::channel(1024);
-    extensions.add_prepare_single(
-        "/agde-ws-carets",
-        prepare!(
-            req,
-            host,
-            _path,
-            addr,
-            move |ws_broadcaster: tokio::sync::broadcast::Sender<Arc<(String, SocketAddr)>>| {
-                let ws_broadcaster = ws_broadcaster.clone();
-                websocket::response(
-                    req,
-                    host,
-                    response_pipe_fut!(
-                        pipe,
-                        _host,
-                        move |ws_broadcaster: tokio::sync::broadcast::Sender<
-                            Arc<(String, SocketAddr)>,
-                        >, addr: SocketAddr| {
-                            use futures_util::FutureExt;
-                            let mut listener = ws_broadcaster.subscribe();
-                            let mut ws = websocket::wrap(pipe).await;
-
-                            loop {
-                                futures_util::select! {
-                                    msg = listener.recv().fuse() => {
-                                        let msg = msg.expect("ws broadcast got backlogged or unexpectedly closed");
-                                        let (data, from) = (*msg).clone();
-                                        if from == *addr {
-                                            continue;
-                                        }
-                                        let msg = websocket::tungstenite::Message::Text(data);
-                                        let _ = ws.send(msg).await.is_err();
-                                    },
-                                    incomming = ws.next() => {
-                                        let incomming = if let Some(Ok(msg)) = incomming {
-                                            msg
-                                        } else {
-                                            break;
-                                        };
-                                        let msg = match incomming {
-                                            websocket::tungstenite::Message::Text(text) => {
-                                                text
-                                            }
-                                            _ => continue,
-                                        };
-                                        if msg.len() > 100 {
-                                            continue;
-                                        }
-                                        ws_broadcaster.send(Arc::new((msg, *addr))).unwrap();
-                                    }
-                                };
-                            }
-                        }
-                    ),
-                )
-                .await
-            }
-        ),
-    );
 
     extensions.with_csp(
         Csp::default()
