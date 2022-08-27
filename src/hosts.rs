@@ -609,7 +609,7 @@ pub fn kvarn_doc(extensions: Extensions) -> Host {
     host
 }
 
-pub fn agde(
+pub async fn agde(
     mut extensions: Extensions,
     spawn_agde: bool,
 ) -> (
@@ -630,7 +630,38 @@ pub fn agde(
         }),
     );
 
-    // WS auth
+    let secret = tokio::fs::read("agde.secret").await.expect(
+        "please provide an agde.secret file with a strong secret (preferably 1024-bit entropy)",
+    );
+    let passwd_file = tokio::fs::read_to_string("agde.passwd").await.expect(
+        "please provide an agde.passwd file with users and their passwords \
+        (space separated, one account per line)",
+    );
+    let accounts: HashMap<String, String> = passwd_file
+        .lines()
+        .filter_map(|line| {
+            let (usr, pas) = line.split_once(' ')?;
+            Some((usr.to_owned(), pas.to_owned()))
+        })
+        .collect();
+    let auth_config = kvarn_auth::Builder::new()
+        .with_cookie_path("/demo/")
+        .with_auth_page_name("/demo/auth")
+        .with_show_auth_page_when_unauthorized("/demo/login.")
+        .build::<(), _, _>(
+            move |user, password, _addr, _req| {
+                let v = if accounts.get(user).map_or(false, |pass| pass == password) {
+                    kvarn_auth::Validation::Authorized(kvarn_auth::AuthData::None)
+                } else {
+                    kvarn_auth::Validation::Unauthorized
+                };
+                core::future::ready(v)
+            },
+            kvarn_auth::CryptoAlgo::EcdsaP256 { secret },
+        );
+    auth_config.mount(&mut extensions);
+    let login_status = auth_config.login_status();
+
     let agde_handle = Arc::new(std::sync::Mutex::new(None));
     let agde_moved_handle = agde_handle.clone();
     if spawn_agde {
@@ -709,7 +740,14 @@ pub fn agde(
             host,
             _path,
             addr,
-            move |ws_broadcaster: tokio::sync::broadcast::Sender<Arc<(Vec<u8>, agde::Uuid, agde::Recipient)>>| {
+            move |
+                ws_broadcaster: tokio::sync::broadcast::Sender<Arc<(Vec<u8>, agde::Uuid, agde::Recipient)>>,
+                login_status: kvarn_auth::LoginStatusClosure<()>
+            | {
+                if matches!(login_status(req, addr), kvarn_auth::Validation::Unauthorized) && !addr.ip().is_loopback() {
+                    return default_error_response(StatusCode::UNAUTHORIZED, host, Some("log in at `/demo/login.html`")).await;
+                }
+
                 let ws_broadcaster = ws_broadcaster.clone();
                 websocket::response(
                     req,
@@ -830,6 +868,10 @@ pub fn agde(
             .add(
                 "/demo/worker.js",
                 CspRule::default().script_src(CspValueSet::default().unsafe_eval()),
+            )
+            .add(
+                "/demo/login.html",
+                CspRule::default().script_src(CspValueSet::default().unsafe_inline()),
             )
             .arc(),
     );

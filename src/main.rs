@@ -23,7 +23,8 @@ async fn main() {
         }
         #[cfg(not(feature = "high_ports"))]
         true
-    });
+    })
+    .await;
     let icelk_bitwarden_host = hosts::icelk_bitwarden(hosts::icelk_bitwarden_extensions());
 
     let mut hosts = match host.as_deref() {
