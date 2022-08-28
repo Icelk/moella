@@ -262,7 +262,7 @@ pub async fn icelk_extensions() -> Extensions {
                             .uri("https://*.openstreetmap.org")
                             .uri("https://maps.googleapis.com")
                             .uri("https://maps.gstatic.com")
-                            .scheme("data".parse().unwrap()),
+                            .scheme("data:"),
                     )
                     .script_src(CspValueSet::default().uri("https://maps.googleapis.com")),
             )
@@ -900,7 +900,9 @@ pub async fn agde(
         Csp::default()
             .add(
                 "/demo/worker.js",
-                CspRule::default().script_src(CspValueSet::default().unsafe_eval()),
+                CspRule::default()
+                    .script_src(CspValueSet::default().unsafe_eval())
+                    .connect_src(CspValueSet::default().scheme("wss:")),
             )
             .add(
                 "/demo/login.html",
