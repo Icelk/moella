@@ -16,15 +16,7 @@ async fn main() {
     let icelk_doc_host = hosts::icelk_doc(hosts::icelk_doc_extensions());
     let (kvarn_host, kvarn_se) = hosts::kvarn(hosts::kvarn_extensions()).await;
     let kvarn_doc_host = hosts::kvarn_doc(hosts::kvarn_doc_extensions());
-    let (agde_host, agde_handle) = hosts::agde(hosts::kvarn_extensions(), {
-        #[cfg(feature = "high_ports")]
-        {
-            host.as_deref() == Some("--agde")
-        }
-        #[cfg(not(feature = "high_ports"))]
-        true
-    })
-    .await;
+    let (agde_host, agde_handle) = hosts::agde(hosts::kvarn_extensions()).await;
     let icelk_bitwarden_host = hosts::icelk_bitwarden(hosts::icelk_bitwarden_extensions());
 
     let mut hosts = match host.as_deref() {
