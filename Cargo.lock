@@ -1029,7 +1029,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "base64",
  "brotli",
@@ -1076,7 +1076,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn-extensions"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "async_chunked_transfer",
  "futures-util",
@@ -1119,7 +1119,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn-search"
-version = "0.3.2"
+version = "0.4.0"
 dependencies = [
  "elipdotter",
  "kvarn",
@@ -1134,7 +1134,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn_async"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "bytes",
  "http",
@@ -1153,7 +1153,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn_utils"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "bytes",
  "http",
