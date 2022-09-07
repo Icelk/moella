@@ -1,5 +1,6 @@
 use comprash::ClientCachePreference;
 use internals::mime;
+use kvarn::prelude::bytes::BufMut;
 use kvarn::prelude::*;
 use kvarn::websocket::{SinkExt, StreamExt};
 
@@ -271,6 +272,10 @@ pub async fn icelk_extensions() -> Extensions {
                 CspRule::default().default_src(CspValueSet::default().unsafe_inline()),
             )
             .add("/organization-game/*", CspRule::empty())
+            .add(
+                "/quizlet-learn/login.html",
+                CspRule::default().script_src(CspValueSet::default().unsafe_inline()),
+            )
             .arc(),
     );
 
@@ -465,6 +470,133 @@ pub async fn icelk_extensions() -> Extensions {
             Duration::from_secs(10),
         )
         .mount(&mut extensions);
+    }
+
+    let quizlet_secret = tokio::fs::read("quizlet-learn.secret").await;
+    let quizlet_passwd_file = tokio::fs::read_to_string("quizlet-learn.passwd").await;
+    if let (Ok(quizlet_secret), Ok(quizlet_passwd_file)) = (quizlet_secret, quizlet_passwd_file) {
+        let accounts: HashMap<String, String> = quizlet_passwd_file
+            .lines()
+            .filter_map(|line| {
+                let (usr, pas) = line.split_once(' ')?;
+                Some((usr.to_owned(), pas.to_owned()))
+            })
+            .collect();
+        let auth_config = kvarn_auth::Builder::new()
+            .with_auth_page_name("/quizlet-learn/auth")
+            .with_cookie_path("/quizlet-learn/")
+            .with_show_auth_page_when_unauthorized("/quizlet-learn/login.")
+            .build::<(), _, _>(
+                move |user, password, _addr, _req| {
+                    let v = if accounts.get(user).map_or(false, |pass| pass == password) {
+                        kvarn_auth::Validation::Authorized(kvarn_auth::AuthData::None)
+                    } else {
+                        kvarn_auth::Validation::Unauthorized
+                    };
+                    core::future::ready(v)
+                },
+                kvarn_auth::CryptoAlgo::EcdsaP256 {
+                    secret: quizlet_secret,
+                },
+            );
+        auth_config.mount(&mut extensions);
+        let login_status = auth_config.login_status();
+        let client = reqwest::Client::new();
+        extensions.add_prepare_single(
+            "/quizlet-learn/words",
+            prepare!(
+                req,
+                host,
+                _path,
+                addr,
+                move |login_status: kvarn_auth::LoginStatusClosure<()>, client: reqwest::Client| {
+                    let status = login_status(req, addr);
+                    let response = if let kvarn_auth::Validation::Authorized(_) = status {
+                        if let Some(uri) =
+                            utils::parse::query(req.uri().query().unwrap_or("")).get("quizlet")
+                        {
+                            let uri = reqwest::Url::parse(uri.value()).ok().and_then(|uri| {
+                                if uri.domain().map_or(false, |domain| domain != "quizlet.com") {
+                                    None
+                                } else {
+                                    Some(uri)
+                                }
+                            });
+                            if let Some(uri) = uri {
+                                let mut request = reqwest::Request::new(reqwest::Method::GET, uri);
+                                // bypass bot filter xD
+                                request.headers_mut().insert(
+                                    "user-agent",
+                                    HeaderValue::from_static(
+                                        "Mozilla/5.0 (Windows NT 10.0; rv:91.0) \
+                                        Gecko/20100101 Firefox/91.0",
+                                    ),
+                                );
+                                let body = if let Ok(response) = client.execute(request).await {
+                                    response.text().await.ok()
+                                } else {
+                                    None
+                                };
+                                let body = if let Some(body) = body {
+                                    body
+                                } else {
+                                    return default_error_response(
+                                        StatusCode::BAD_GATEWAY,
+                                        host,
+                                        None,
+                                    )
+                                    .await;
+                                };
+
+                                let document = select::document::Document::from(body.as_str());
+                                let elements = document
+                                    .find(select::predicate::Class("SetPageTerm-contentWrapper"));
+
+                                let mut bytes = BytesMut::new();
+                                for node in elements {
+                                    let (l1, l2) = if let Some(l) =
+                                        node.children().next().and_then(|child| {
+                                            let mut c = child.children();
+                                            Some((c.next()?, c.next()?))
+                                        }) {
+                                        l
+                                    } else {
+                                        continue;
+                                    };
+                                    bytes.extend_from_slice(l1.text().as_bytes());
+                                    bytes.put_u8(b'\n');
+                                    bytes.extend_from_slice(l2.text().as_bytes());
+                                    bytes.put_u8(b'\n');
+                                }
+
+                                Response::new(bytes.freeze())
+                                // fetch
+                            } else {
+                                return default_error_response(
+                                    StatusCode::BAD_REQUEST,
+                                    host,
+                                    Some(
+                                        "the quizlet query parameter \
+                                        couldn't be converted into an URI.",
+                                    ),
+                                )
+                                .await;
+                            }
+                        } else {
+                            return default_error_response(
+                                StatusCode::BAD_REQUEST,
+                                host,
+                                Some("the quizlet query parameter is required"),
+                            )
+                            .await;
+                        }
+                    } else {
+                        return default_error_response(StatusCode::UNAUTHORIZED, host, None).await;
+                    };
+                    FatResponse::no_cache(response).with_content_type(&internals::mime::TEXT_PLAIN)
+                }
+            ),
+        );
     }
 
     extensions
