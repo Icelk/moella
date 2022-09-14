@@ -563,9 +563,31 @@ pub async fn icelk_extensions() -> Extensions {
                                     } else {
                                         continue;
                                     };
-                                    bytes.extend_from_slice(l1.text().as_bytes());
+                                    let mut t1s =
+                                        l1.descendants().filter_map(|n| n.as_text()).peekable();
+                                    while let Some(t1) = t1s.next() {
+                                        for text_seg in t1.split(|c: char| c == '\n' || c == '|') {
+                                            bytes.extend_from_slice(text_seg.as_bytes());
+                                            bytes.put_u8(b' ');
+                                        }
+
+                                        if t1s.peek().is_some() {
+                                            bytes.put_u8(b'|');
+                                        }
+                                    }
                                     bytes.put_u8(b'\n');
-                                    bytes.extend_from_slice(l2.text().as_bytes());
+                                    let mut t2s =
+                                        l2.descendants().filter_map(|n| n.as_text()).peekable();
+                                    while let Some(t2) = t2s.next() {
+                                        for text_seg in t2.split(|c: char| c == '\n' || c == '|') {
+                                            bytes.extend_from_slice(text_seg.as_bytes());
+                                            bytes.put_u8(b' ');
+                                        }
+
+                                        if t2s.peek().is_some() {
+                                            bytes.put_u8(b'|');
+                                        }
+                                    }
                                     bytes.put_u8(b'\n');
                                 }
 
