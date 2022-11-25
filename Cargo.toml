@@ -13,7 +13,7 @@ keywords = ["web-server"]
 categories = ["web-programming", "web-programming::http-server", "command-line-utilities"]
 
 [dependencies]
-kvarn = { path = "../kvarn", default-features = false }
+kvarn = { path = "../kvarn", default-features = false, features = ["base"] }
 # kvarn = { version = "=0.4.1", default-features = false }
 kvarn-extensions = { path = "../kvarn/extensions", features = ["reverse-proxy"] }
 # kvarn-extensions = { version = "=0.4.1", features = ["reverse-proxy"] }
