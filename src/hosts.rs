@@ -39,12 +39,11 @@ pub async fn icelk_extensions() -> Extensions {
     // Mount all extensions to server
     let mut extensions = kvarn_extensions::new();
 
-    let resolver_opts = trust_dns_resolver::config::ResolverOpts {
-        cache_size: 0,
-        validate: false,
-        timeout: Duration::from_millis(1000),
-        ..Default::default()
-    };
+    let mut resolver_opts = trust_dns_resolver::config::ResolverOpts::default();
+    resolver_opts.cache_size = 0;
+    resolver_opts.validate = false;
+    resolver_opts.timeout = Duration::from_millis(1000);
+
     let mut resolver_config = trust_dns_resolver::config::ResolverConfig::new();
     resolver_config.add_name_server(trust_dns_resolver::config::NameServerConfig {
         socket_addr: SocketAddr::V4(net::SocketAddrV4::new(net::Ipv4Addr::LOCALHOST, 53)),
@@ -52,6 +51,7 @@ pub async fn icelk_extensions() -> Extensions {
         tls_dns_name: None,
         trust_nx_responses: true,
         tls_config: None,
+        bind_addr: None,
     });
     let resolver = trust_dns_resolver::AsyncResolver::tokio(resolver_config, resolver_opts)
         .expect("Failed to create a resolver");
@@ -96,7 +96,6 @@ pub async fn icelk_extensions() -> Extensions {
                         resolver.lookup(
                             domain.value(),
                             trust_dns_resolver::proto::rr::RecordType::CNAME,
-                            trust_dns_resolver::proto::xfer::DnsRequestOptions::default()
                         ),
                         "CNAME"
                     );
@@ -155,13 +154,12 @@ pub async fn icelk_extensions() -> Extensions {
                             false,
                         ),
                     );
+                    let mut resolver_opts = trust_dns_resolver::config::ResolverOpts::default();
+                    resolver_opts.timeout = Duration::from_secs_f64(2.);
+                    resolver_opts.validate = false;
                     if let Ok(resolver) = trust_dns_resolver::AsyncResolver::tokio(
                         resolver_config,
-                        trust_dns_resolver::config::ResolverOpts {
-                            timeout: Duration::from_secs_f64(2.0),
-                            validate: false,
-                            ..Default::default()
-                        }
+                        resolver_opts
                     ) {
                         let query = queries.get("lookup-name").map(utils::parse::QueryPair::value).unwrap_or("icelk.dev.");
                         let future = UnsafeSendSyncFuture::new(resolver.ipv4_lookup(query));
@@ -248,6 +246,7 @@ pub async fn icelk_extensions() -> Extensions {
                 "/index.html",
                 base_csp.script_src(CspValueSet::default().unsafe_inline()),
             )
+            .add("/matsvinn/*", CspRule::empty())
             .add("/api/*", CspRule::empty())
             .add("/ip", CspRule::empty())
             .add(
@@ -271,7 +270,6 @@ pub async fn icelk_extensions() -> Extensions {
                 "/admin",
                 CspRule::default().default_src(CspValueSet::default().unsafe_inline()),
             )
-            .add("/organization-game/*", CspRule::empty())
             .add(
                 "/quizlet-learn/login.html",
                 CspRule::default().script_src(CspValueSet::default().unsafe_inline()),
@@ -385,91 +383,6 @@ pub async fn icelk_extensions() -> Extensions {
                 }
             ),
         );
-    }
-
-    let aog_secret = tokio::fs::read("aog.secret").await;
-    let aog_passwd_file = tokio::fs::read_to_string("aog.passwd").await;
-    if let (Ok(aog_secret), Ok(aog_passwd_file)) = (aog_secret, aog_passwd_file) {
-        let accounts: HashMap<String, String> = aog_passwd_file
-            .lines()
-            .filter_map(|line| {
-                let (usr, pas) = line.split_once(' ')?;
-                Some((usr.to_owned(), pas.to_owned()))
-            })
-            .collect();
-        let auth_config = kvarn_auth::Builder::new()
-            .with_cookie_path("/organization-game/")
-            .with_auth_page_name("/organization-game/auth")
-            .with_show_auth_page_when_unauthorized("/organization-game/login")
-            .build::<(), _, _>(
-                move |user, password, _addr, _req| {
-                    let v = if accounts.get(user).map_or(false, |pass| pass == password) {
-                        kvarn_auth::Validation::Authorized(kvarn_auth::AuthData::None)
-                    } else {
-                        kvarn_auth::Validation::Unauthorized
-                    };
-                    core::future::ready(v)
-                },
-                kvarn_auth::CryptoAlgo::EcdsaP256 { secret: aog_secret },
-            );
-        auth_config.mount(&mut extensions);
-        let login_status = auth_config.login_status();
-        extensions.add_prepare_single(
-            "/organization-game/login",
-            prepare!(
-                req,
-                _host,
-                _path,
-                addr,
-                move |login_status: kvarn_auth::LoginStatusClosure<()>| {
-                    let status = login_status(req, addr);
-                    let response = if let kvarn_auth::Validation::Authorized(_) = status {
-                        Response::builder()
-                            .header("content-type", "text/plain")
-                            .body(Bytes::from_static("You are now logged in.".as_bytes()))
-                            .unwrap()
-                    } else {
-                        static LOGIN_HTML: &str = r#"<!DOCTYPE html>
-<html>
-    <head>
-        <meta name="color-scheme" content="dark light">
-    </head>
-    <body>
-        <input id="username" placeholder="Username" />
-        <input id="password" placeholder="Password" />
-        <button id="login">Log in</button>
-        <script>
-            let username = document.getElementById("username")
-            let password = document.getElementById("password")
-            let login = document.getElementById("login")
-            login.addEventListener("click", async () => {
-                let u = username.value
-                let p = password.value
-                let response = await fetch("/organization-game/auth",
-                    { method: "PUT", body: `${u.length}\n${u}${p}` })
-                if (response.status === 200) {
-                    location.reload()
-                }
-            })
-        </script>
-    </body>
-</html>
-"#;
-
-                        Response::new(Bytes::from_static(LOGIN_HTML.as_bytes()))
-                    };
-                    FatResponse::no_cache(response)
-                }
-            ),
-        );
-        kvarn_extensions::ReverseProxy::base(
-            "/organization-game/",
-            kvarn_extensions::static_connection(kvarn_extensions::Connection::Tcp(
-                kvarn_extensions::localhost(4040),
-            )),
-            Duration::from_secs(10),
-        )
-        .mount(&mut extensions);
     }
 
     let quizlet_secret = tokio::fs::read("quizlet-learn.secret").await;
@@ -977,14 +890,13 @@ pub async fn agde(
                 let r = handle.wait().await;
 
                 if let Err(err) = r {
-                    error!("agde: Got error when running: {err}. Trying to reconnect in 1s.");
-                    tokio::time::sleep(Duration::from_secs(10)).await;
+                    error!("agde-tokio: Got error when running: {err}. Exiting.");
                 } else {
                     info!("agde-tokio considers itself done.")
                 }
             }
             Err(err) => {
-                error!("Got error: {err}. Agde will not function from now on.");
+                error!("agde-tokio: Got error when starting: {err}. Agde will not function from now on.");
             }
         }
     });

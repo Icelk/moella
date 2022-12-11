@@ -24,13 +24,13 @@ kvarn-auth = { path = "../kvarn-auth" }
 agde-tokio = { path = "../agde/agde-tokio", default-features = false }
 agde = { path = "../agde/agde" }
 http = "0.2"
-env_logger = "0.9"
+env_logger = "0.10"
 tokio = { version = "1.20", features = ["macros"] }
 log = "0.4"
 futures-util = "0.3"
-trust-dns-resolver = { version = "0.20", features = ["dns-over-tls", "dns-over-rustls"] }
+trust-dns-resolver = { version = "0.22", features = ["dns-over-tls", "dns-over-rustls"] }
 reqwest = { version = "0.11.11", default-features = false, features = ["rustls-tls"] }
-select = "0.5.0"
+select = "0.6"
 
 [features]
 default = ["mt", "https", "interactive", "kvarn/default"]
