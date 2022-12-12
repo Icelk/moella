@@ -94,8 +94,6 @@ async fn main() {
     }
 
     let shutdown_manager = ports.execute().await;
-    // agde-tokio WS connection
-    shutdown_manager.remove_connection();
 
     #[cfg(not(feature = "interactive"))]
     {
