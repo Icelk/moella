@@ -18,7 +18,7 @@ checksum = "aae1277d39aeec15cb388266ecc24b11c80469deae6067e17a1a7aa9e5c1f234"
 name = "agde"
 version = "0.1.0"
 dependencies = [
- "base64 0.13.1",
+ "base64 0.20.0",
  "bincode",
  "den",
  "getrandom 0.2.8",
@@ -49,7 +49,7 @@ dependencies = [
  "agde-io",
  "bincode",
  "ctrlc",
- "env_logger 0.9.3",
+ "env_logger",
  "futures",
  "lazy_static",
  "log",
@@ -142,17 +142,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1a661ab0a28cc9e1fa67ce4141bc01703e1f140c4e8ed9e2f9fb671c5d35fd8"
 dependencies = [
  "tokio",
-]
-
-[[package]]
-name = "atty"
-version = "0.2.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8"
-dependencies = [
- "hermit-abi 0.1.19",
- "libc",
- "winapi",
 ]
 
 [[package]]
@@ -577,18 +566,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "env_logger"
-version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a12e6657c4c97ebab115a42dcee77225f7f482cdd841cf7088c657a42e9e00e7"
-dependencies = [
- "atty",
- "humantime",
- "log",
- "termcolor",
 ]
 
 [[package]]
@@ -1165,7 +1142,7 @@ dependencies = [
 name = "kvarn"
 version = "0.5.0"
 dependencies = [
- "base64 0.13.1",
+ "base64 0.20.0",
  "brotli",
  "bytes",
  "flate2",
@@ -1239,7 +1216,7 @@ version = "0.4.0"
 dependencies = [
  "agde",
  "agde-tokio",
- "env_logger 0.10.0",
+ "env_logger",
  "futures-util",
  "http",
  "kvarn",
@@ -1317,9 +1294,9 @@ checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f9f08d8963a6c613f4b1a78f4f4a4dbfadf8e6545b2d72861731e4858b8b47f"
+checksum = "f051f77a7c8e6957c0696eac88f26b0117e54f52d3fc682ab19397a8812846a4"
 
 [[package]]
 name = "lock_api"
@@ -2996,18 +2973,18 @@ checksum = "c394b5bd0c6f669e7275d9c20aa90ae064cb22e75a1cad54e1b34088034b149f"
 
 [[package]]
 name = "zstd"
-version = "0.11.2+zstd.1.5.2"
+version = "0.12.1+zstd.1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20cc960326ece64f010d2d2107537f26dc589a6573a316bd5b1dba685fa5fde4"
+checksum = "5c947d2adc84ff9a59f2e3c03b81aa4128acf28d6ad7d56273f7e8af14e47bea"
 dependencies = [
  "zstd-safe",
 ]
 
 [[package]]
 name = "zstd-safe"
-version = "5.0.2+zstd.1.5.2"
+version = "6.0.2+zstd.1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d2a5585e04f9eea4b2a3d1eca508c4dee9592a89ef6f450c11719da0726f4db"
+checksum = "a6cf39f730b440bab43da8fb5faf5f254574462f73f260f85f7987f32154ff17"
 dependencies = [
  "libc",
  "zstd-sys",
