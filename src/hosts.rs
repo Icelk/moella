@@ -232,6 +232,8 @@ pub async fn icelk_extensions() -> Extensions {
         &mut extensions,
         &[
             (".png", ClientCachePreference::Changing),
+            (".avif", ClientCachePreference::Full),
+            (".jpg", ClientCachePreference::Full),
             (".ico", ClientCachePreference::Full),
             (".woff2", ClientCachePreference::Full),
             ("/highlight.js/", ClientCachePreference::Full),
@@ -273,6 +275,17 @@ pub async fn icelk_extensions() -> Extensions {
             .add(
                 "/quizlet-learn/login.html",
                 CspRule::default().script_src(CspValueSet::default().unsafe_inline()),
+            )
+            .add(
+                "/articles/*",
+                CspRule::default()
+                    .style_src(
+                        CspValueSet::default()
+                            .unsafe_inline()
+                            .uri("https://fonts.googleapis.com")
+                            .uri("https://fonts.gstatic.com"),
+                    )
+                    .default_src(CspValueSet::default().uri("https://fonts.gstatic.com")),
             )
             .arc(),
     );
