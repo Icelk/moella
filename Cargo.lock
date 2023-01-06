@@ -1193,6 +1193,7 @@ dependencies = [
  "futures-util",
  "kvarn",
  "kvarn-fastcgi-client",
+ "memchr",
  "percent-encoding",
  "tokio",
  "url-crawl",
