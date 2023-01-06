@@ -212,6 +212,15 @@ pub async fn icelk_extensions() -> Extensions {
         }),
     );
 
+    kvarn_extensions::view_counter::mount(
+        &mut extensions,
+        kvarn_extensions::view_counter::starts_with_predicate("/"),
+        "icelk-views",
+        Duration::from_secs(60 * 60),
+        Duration::from_secs(60 * 60),
+    )
+    .await;
+
     // if you have ulogger installed...
     if tokio::fs::metadata("../ulogger")
         .await
