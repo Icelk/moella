@@ -14,9 +14,11 @@ jobs:
             - run: rustup toolchain install stable
             - uses: Swatinem/rust-cache@v2
             - name: Clone kvarn
-              run: git clone https://github.com/Icelk/kvarn ../kvarn \
-                && git clone https://github.com/Icelk/kvarn-search ../kvarn-search \
-                && git clone https://github.com/Icelk/kvarn-auth ../kvarn-auth
+              run: git clone https://github.com/Icelk/kvarn ../kvarn
+            - name: Clone kvarn-search
+              run: git clone https://github.com/Icelk/kvarn-search ../kvarn-search
+            - name: Clone kvarn-auth
+              run: git clone https://github.com/Icelk/kvarn-auth ../kvarn-auth
             - name: Checking formatting
               run: cargo fmt --check
             - name: Checking lints
