@@ -44,7 +44,7 @@ jobs:
             - name: Clone kvarn-auth
               run: git clone https://github.com/Icelk/kvarn-auth ../kvarn-auth
             - name: Compiling
-              run: cargo build --release
+              run: cargo build --release -F bin --bin moella
             - name: Upload bin artefact
               uses: actions/upload-artifact@v3
               with:
