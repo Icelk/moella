@@ -208,6 +208,8 @@ impl Extension {
                         }
                     }
                 }
+
+                proxy.mount(exts);
             }
             Self::ClientCache(map) => kvarn_extensions::force_cache(
                 exts,
