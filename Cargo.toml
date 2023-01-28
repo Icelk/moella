@@ -1,46 +1,42 @@
 [package]
-name = "kvarn-reference"
-version = "0.4.0"
+name = "moella"
+version = "0.1.0"
 authors = ["Icelk <main@icelk.dev>"]
 edition = "2021"
 rust-version = "1.56"
-description = "An implementation of the Kvarn web server framework."
+description = "An implementation of the Kvarn web server framework with a convenient config format."
 readme = "README.md"
 homepage = "https://kvarn.org/"
-repository = "https://github.com/Icelk/kvarn-reference/"
+repository = "https://github.com/Icelk/moella/"
 license = "Apache-2.0"
-keywords = ["web-server"]
-categories = ["web-programming", "web-programming::http-server", "command-line-utilities"]
+keywords = ["web-server", "kvarn"]
+categories = ["web-programming", "web-programming::http-server", "command-line-utilities", "config"]
+
+[[bin]]
+name = "moella"
+path = "src/bin/main.rs"
+required-features = ["bin"]
+
+[lib]
 
 [dependencies]
-kvarn = { path = "../kvarn", default-features = false, features = ["base"] }
-# kvarn = { version = "=0.4.1", default-features = false }
+kvarn = { path = "../kvarn", default-features = false, features = ["full"] }
+# kvarn = { version = "=0.4.1", default-features = false, features = ["full"] }
 kvarn-extensions = { path = "../kvarn/extensions", features = ["reverse-proxy"] }
 # kvarn-extensions = { version = "=0.4.1", features = ["reverse-proxy"] }
 kvarn-search = { path = "../kvarn-search" }
 # kvarn-search = "0.1"
 kvarn-auth = { path = "../kvarn-auth" }
 # kvarn-auth = "0.1"
-agde-tokio = { path = "../agde/agde-tokio", default-features = false }
-agde = { path = "../agde/agde" }
 http = "0.2"
-env_logger = "0.10"
-tokio = { version = "1.20", features = ["macros"] }
+tokio = "1.24"
 log = "0.4"
-futures-util = "0.3"
-trust-dns-resolver = { version = "0.22", features = ["dns-over-tls", "dns-over-rustls"] }
-reqwest = { version = "0.11.11", default-features = false, features = ["rustls-tls"] }
-select = "0.6"
+serde = { version = "1", features = ["derive"] }
+ron = "0.8.0"
+
+env_logger = {version = "0.10", optional = true }
+clap = { version = "4.1.4", features = ["cargo"], optional = true }
 
 [features]
-default = ["mt", "https", "interactive", "kvarn/default"]
-production = ["mt", "https", "kvarn/all-http", "kvarn/all-compression", "kvarn/graceful-shutdown", "kvarn/websocket"]
-
-# Interactive program
-interactive = []
-
-# Run only on port 8080 for HTTP and 8443 for HTTPS instead of 80 and 443 for testing without root access
-high_ports = []
-
-mt = []
-https = ["kvarn/https"]
+default = []
+bin = ["env_logger", "clap", "tokio/rt-multi-thread", "tokio/macros"]

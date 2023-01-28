@@ -1,30 +1,23 @@
-# Kvarn reference binary
+# Mölla
 
-> As [kvarn-search](https://github.com/Icelk/kvarn-search) isn't published on crates.io yet, you must clone it at `../kvarn-search`.
+This is the reference implementation of the Kvarn server library,
+offering a **simple config** to get you started using Kvarn.
 
-This is a reference implementation of the Kvarn server library.
-It's for my personal use for my domains [icelk.dev](https://icelk.dev/) and [kvarn.org](https://kvarn.org/)
-and will therefore not work with most configurations.
+> See `moella --help` for config options
 
-For now, I suggest forking this repo and tweaking it to your liking.
+It's for my personal use on my domains [icelk.dev](https://icelk.dev/) and [kvarn.org](https://kvarn.org/).
+
+An example config [is available](https://github.com/Icelk/moella/blob/main/example-config.ron).
+You can also take a look at the [icelk.dev config](https://github.com/Icelk/icelk.dev/blob/main/icelk.dev.ron)
 
 ## Installation
 
-If you really want to install it, you can run the following.
+[Install Rust](https://rust-lang.org/learn/get-started) and then run the following:
 
 ```shell
-$ cargo install kvarn-reference
+$ cargo install moella
 ```
-
-# Folder structure
-
-To get this example working, it is assumed you have the [Kvarn](https://github.com/Icelk/kvarn) library in `../kvarn`,
-the files for `icelk.dev` and `kvarn.org` in `../icelk.dev` and `../kvarn.org`, respectively.
 
 # Development
 
 During development, this requires [Kvarn](https://github.com/Icelk/kvarn) to be cloned at `../kvarn`, [Kvarn Search](https://github.com/Icelk/kvarn-search) at `../kvarn-search`, and [Kvarn Auth](https://github.com/Icelk/kvarn-auth) at `../kvarn-auth`.
-
-# Future
-
-I plan to add support for a [config file](https://kvarn.org/config.) so you do _not_ have to recompile the binary every time you want to support a new domain.
