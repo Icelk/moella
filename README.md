@@ -18,6 +18,9 @@ You can also take a look at the [icelk.dev config](https://github.com/Icelk/icel
 $ cargo install moella
 ```
 
+There are also builds available for Linux in [Github Acctions](https://github.com/Icelk/moella/actions),
+and possibly for other platforms under `Releases` (yet to be determined).
+
 # Development
 
 During development, this requires [Kvarn](https://github.com/Icelk/kvarn) to be cloned at `../kvarn`, [Kvarn Search](https://github.com/Icelk/kvarn-search) at `../kvarn-search`, and [Kvarn Auth](https://github.com/Icelk/kvarn-auth) at `../kvarn-auth`.
