@@ -18,7 +18,7 @@ You can also take a look at the [icelk.dev config](https://github.com/Icelk/icel
 $ cargo install moella
 ```
 
-There are also builds available for Linux in [Github Acctions](https://github.com/Icelk/moella/actions),
+There are also builds available for Linux in [Github Actions](https://github.com/Icelk/moella/actions),
 and possibly for other platforms under `Releases` (yet to be determined).
 
 # Development
