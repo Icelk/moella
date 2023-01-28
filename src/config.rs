@@ -207,7 +207,7 @@ impl CustomExtensions {
     pub fn empty() -> Self {
         Self(HashMap::new())
     }
-    /// Same as [`Self::insert_without_extension_config`], but without access to the config dir
+    /// Same as [`Self::insert_without_data`], but without access to the config dir
     /// (for usage with other extensions in Mölla).
     pub fn insert_without_data_or_config_dir(
         &mut self,
