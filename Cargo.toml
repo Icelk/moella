@@ -40,3 +40,8 @@ clap = { version = "4.1.4", features = ["cargo"], optional = true }
 [features]
 default = []
 bin = ["env_logger", "clap", "tokio/rt-multi-thread", "tokio/macros"]
+
+[profile.distr]
+inherits = "release"
+strip = true
+lto = true

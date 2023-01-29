@@ -19,7 +19,7 @@ $ cargo install moella
 ```
 
 There are also builds available for Linux in [Github Actions](https://github.com/Icelk/moella/actions),
-and possibly for other platforms under `Releases` (yet to be determined).
+and for other platforms under `Releases`.
 
 # Development
 
