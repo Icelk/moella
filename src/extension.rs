@@ -781,22 +781,37 @@ pub struct ViewCounter {
 }
 
 fn parse_connection(s: &str) -> Result<kvarn_extensions::Connection> {
-    use std::net::ToSocketAddrs;
+    use std::net::{SocketAddr, ToSocketAddrs};
+
+    let select_addr = |mut addrs: std::vec::IntoIter<SocketAddr>| {
+        let mut current = addrs.next();
+        for addr in addrs {
+            if addr.is_ipv4() && current.as_ref().map_or(true, SocketAddr::is_ipv6) {
+                current = Some(addr);
+            }
+        }
+        current
+    };
+
     if let Some(socket) = s.strip_prefix("tcp:") {
         let socket = socket.strip_prefix("//").unwrap_or(socket);
-        let socket = socket
-            .to_socket_addrs()
-            .map_err(|err| format!("Failed to resolve tcp:{socket}: {err:?}"))?
-            .next()
-            .ok_or_else(|| format!("Hostname {socket} didn't resolve any IP adresses"))?;
+        let socket = select_addr(
+            socket
+                .to_socket_addrs()
+                .map_err(|err| format!("Failed to resolve tcp:{socket}: {err:?}"))?,
+        )
+        .ok_or_else(|| format!("Hostname {socket} didn't resolve any IP adresses"))?;
+
         Ok(kvarn_extensions::Connection::Tcp(socket))
     } else if let Some(socket) = s.strip_prefix("udp:") {
         let socket = socket.strip_prefix("//").unwrap_or(socket);
-        let socket = socket
-            .to_socket_addrs()
-            .map_err(|err| format!("Failed to resolve udp:{socket}: {err:?}"))?
-            .next()
-            .ok_or_else(|| format!("Hostname {socket} didn't resolve any IP adresses"))?;
+        let socket = select_addr(
+            socket
+                .to_socket_addrs()
+                .map_err(|err| format!("Failed to resolve udp:{socket}: {err:?}"))?,
+        )
+        .ok_or_else(|| format!("Hostname {socket} didn't resolve any IP adresses"))?;
+
         Ok(kvarn_extensions::Connection::Udp(socket))
     } else if let Some(path) = s.strip_prefix("unix:") {
         let path = path.strip_prefix("//").unwrap_or(path);
