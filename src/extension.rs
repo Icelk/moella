@@ -10,6 +10,7 @@ pub use kvarn_auth;
 pub use kvarn_extensions;
 pub use kvarn_search;
 
+/// The available extensions.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub enum Extension {
@@ -340,6 +341,8 @@ impl IntermediaryExtensions {
     }
 }
 
+/// Get a [`kvarn::Extensions`] from a list of [`Extension`].
+/// `cfg_dir` is the directory of the config file these extensions are read from.
 pub async fn build_extensions(
     exts: Vec<Extension>,
     host: &kvarn::host::Host,
@@ -358,6 +361,7 @@ pub async fn build_extensions(
 
     Ok(exts)
 }
+/// Same as [`build_extensions`], but building on top `extensions`.
 pub async fn build_extensions_inherit(
     exts: Vec<Extension>,
     extensions: kvarn::Extensions,
@@ -511,33 +515,6 @@ impl CspSource {
 #[serde(deny_unknown_fields)]
 #[allow(non_camel_case_types)] // serde names!
 pub enum CspDirective {
-    // child_src, "child-src",
-    // connect_src, "connect-src",
-    // default_src, "default-src",
-    // font_src, "font-src",
-    // frame_src, "frame-src",
-    // img_src, "img-src",
-    // manifest_src, "manifest-src",
-    // media_src, "media-src",
-    // object_src, "object-src",
-    // prefetch_src, "prefetch-src",
-    // script_src, "script-src",
-    // script_src_elem, "script-src-elem",
-    // script_src_attr, "script-src-attr",
-    // style_src, unsafe_inline(), "style-src",
-    // style_src_elem, "style-src-elem",
-    // style_src_attr, "style-src-attr",
-    // worker_src, "worker-src",
-    // base_uri, "base-uri",
-    // sandbox, "sandbox",
-    // form_action, "form-action",
-    // frame_ancestors, "frame-ancestors",
-    // navigate_to, "navigate-to",
-    // report, "report-to" "report-uri",
-    // require_sri_for, "require-sri-for",
-    // require_trusted_types_for, "require-trused-types-for",
-    // trusted_types, "trusted-types",
-    // upgrade_insecure_requests, "upgrade-insecure-requests",
     child_src,
     connect_src,
     default_src,

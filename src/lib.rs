@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 pub mod config;
 pub mod extension;
 pub mod host;
@@ -10,7 +11,14 @@ pub use config::read_and_resolve;
 pub fn command() -> clap::Command {
     use clap::Arg;
     let c = clap::command!();
-    c.arg(
+    c.long_about(
+        "Mölla runns the Kvarn web server using plain-text configs.\n\
+        See https://kvarn.org/moella/ for more details and how to write the config.\n\
+        \n\
+        Logging is controlled using the environment variable `KVARN_LOG`.\n\
+        See https://docs.rs/env_logger/latest/env_logger/#example for log settings.",
+    )
+    .arg(
         Arg::new("config")
             .short('c')
             .long("config")
@@ -35,6 +43,9 @@ pub fn command() -> clap::Command {
 
 /// Sets up logging, starts the server, and returns the handle.
 /// Also handles argument parsing.
+///
+/// Logging is controlled using the environment variable `KVARN_LOG`.
+/// See [this page](https://docs.rs/env_logger/latest/env_logger/#example) for log settings.
 #[cfg(feature = "bin")]
 pub async fn run(
     custom_extensions: &config::CustomExtensions,

@@ -8,11 +8,11 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-pub type Result<T> = std::result::Result<T, String>;
+pub(crate) type Result<T> = std::result::Result<T, String>;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct KvarnConfig {
+pub(crate) struct KvarnConfig {
     extensions: HashMap<String, Vec<Extension>>,
     hosts: Vec<Host>,
     host_collections: Option<HashMap<String, Vec<String>>>,
@@ -20,6 +20,7 @@ pub struct KvarnConfig {
     import: Option<Vec<String>>,
 }
 
+/// Parse config at `path`.
 #[allow(clippy::or_fun_call)] // it's just as_ref()
 async fn read_config(file: impl AsRef<Path>) -> Result<KvarnConfig> {
     let s = file.as_ref();
@@ -42,6 +43,9 @@ async fn read_config(file: impl AsRef<Path>) -> Result<KvarnConfig> {
             )
         })
 }
+/// Read config at `path` and resolve it's contents and
+/// it's imports (dependency configs).
+/// Returns a [`kvarn::RunConfig`] you can [`kvarn::RunConfig::execute`].
 pub async fn read_and_resolve(
     file: impl AsRef<str>,
     custom_extensions: &CustomExtensions,
