@@ -6,4 +6,4 @@
 # ar = "x86_64-apple-darwin14-ar"
 
 export CC=o64-clang
-cargo build --profile distr --target x86_64-apple-darwin -F bin --bin moella
+cargo build --profile distribution --target x86_64-apple-darwin -F bin --bin moella
