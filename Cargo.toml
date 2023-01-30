@@ -34,8 +34,11 @@ log = "0.4"
 serde = { version = "1", features = ["derive"] }
 ron = "0.8.0"
 
-env_logger = {version = "0.10", optional = true }
+env_logger = {version = "0.10", default-features = false, features = ["auto-color"], optional = true }
 clap = { version = "4.1.4", features = ["cargo"], optional = true }
+
+[target.'cfg(unix)'.dependencies]
+libc = { version = "0.2", default-features = false }
 
 [features]
 default = []

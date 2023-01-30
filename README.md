@@ -35,6 +35,11 @@ To run it, download the binary appropriate for your platform.
 $ cargo install moella
 ```
 
+# Documentation
+
+- [Kvarn website](https://kvarn.org/moella/)
+- [Library docs](https://doc.icelk.dev/moella/moella/)
+
 # Development
 
 During development, Mölla requires

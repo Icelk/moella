@@ -4,6 +4,8 @@ pub mod extension;
 pub mod host;
 pub mod port;
 
+use std::path::{Path, PathBuf};
+
 pub use config::read_and_resolve;
 
 /// CLI argument parser.
@@ -39,6 +41,21 @@ pub fn command() -> clap::Command {
             .help("Set the default host to show")
             .num_args(1),
     )
+    .arg(
+        Arg::new("instance")
+            .long("instance-path")
+            .long("ctl-socket")
+            .short('p')
+            .help(
+                "The path of the control socket. \
+                If you want to start multiple instances of moella, \
+                consider this to be an instance name, \
+                and make it different for all instances. \
+                If you are using kvarnctl, remember to specify this \
+                when running the kvarnctl, else it won't find this instance!",
+            )
+            .default_value("kvarn.sock"),
+    )
 }
 
 /// Sets up logging, starts the server, and returns the handle.
@@ -55,7 +72,7 @@ pub async fn run(
 
     let matches = command().get_matches();
 
-    let rc = match config::read_and_resolve(
+    let mut rc = match config::read_and_resolve(
         matches.get_one::<String>("config").expect("it's required"),
         custom_extensions,
         matches.get_flag("high_ports"),
@@ -69,7 +86,32 @@ pub async fn run(
             std::process::exit(1);
         }
     };
-    let sh = rc.execute().await;
 
-    sh
+    let ctl_path = socket_path().join(
+        matches
+            .get_one::<String>("instance")
+            .expect("we provided a default"),
+    );
+    rc = rc.set_ctl_path(ctl_path);
+
+    rc.execute().await
+}
+
+#[allow(unused_assignments)]
+pub(crate) fn socket_path() -> PathBuf {
+    let mut p = Path::new("/run").to_path_buf();
+    #[cfg(all(unix, target_os = "macos"))]
+    {
+        p = std::env::var_os("HOME")
+            .map_or_else(|| Path::new("/Library/Caches").to_path_buf(), Into::into);
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        let user: u32 = unsafe { libc::getuid() };
+        if user != 0 {
+            p.push("user");
+            p.push(user.to_string());
+        }
+    }
+    p
 }
