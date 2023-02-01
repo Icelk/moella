@@ -352,6 +352,8 @@ pub async fn build_extensions(
     let intermediary = IntermediaryExtensions::new(exts);
     let (mut exts, v) = intermediary.into_parts();
 
+    exts.with_server_header("Kvarn/0.5.0 Moella/0.1.0", true, true);
+
     for ext in v {
         let mut ext2 = ext.mount(&mut exts, host, custom_exts, cfg_dir).await?;
         while let Some(ext) = ext2.take() {
