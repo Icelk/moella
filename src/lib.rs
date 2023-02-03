@@ -4,8 +4,6 @@ pub mod extension;
 pub mod host;
 pub mod port;
 
-use std::path::{Path, PathBuf};
-
 pub use config::read_and_resolve;
 
 /// CLI argument parser.
@@ -97,8 +95,10 @@ pub async fn run(
     rc.execute().await
 }
 
+#[cfg(feature = "bin")]
 #[allow(unused_assignments)]
-pub(crate) fn socket_path() -> PathBuf {
+pub(crate) fn socket_path() -> std::path::PathBuf {
+    use std::path::Path;
     let mut p = Path::new("/run").to_path_buf();
     #[cfg(all(unix, target_os = "macos"))]
     {
