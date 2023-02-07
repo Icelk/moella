@@ -7,8 +7,9 @@ offering a [**simple config**](https://kvarn.org/moella/) to get you started usi
 
 It's for my personal use on my domains [icelk.dev](https://icelk.dev/) and [kvarn.org](https://kvarn.org/).
 
-An example config [is available](https://github.com/Icelk/moella/blob/main/example-config.ron).
+See [kvarn.org](https://kvarn.org/moella/) for an example config and the schema of the config.
 You can also take a look at the [icelk.dev config](https://github.com/Icelk/icelk.dev/blob/main/icelk.dev.ron)
+for a production example.
 
 ## Installation
 
