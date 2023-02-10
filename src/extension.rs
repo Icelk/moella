@@ -759,6 +759,7 @@ pub struct ViewCounter {
     accept_same_ip_interval: Option<f64>,
 }
 
+#[cfg_attr(windows, allow(unused_variables))] // UNIX sockets
 fn parse_connection(s: &str) -> Result<kvarn_extensions::Connection> {
     use std::net::{SocketAddr, ToSocketAddrs};
 
@@ -793,8 +794,15 @@ fn parse_connection(s: &str) -> Result<kvarn_extensions::Connection> {
 
         Ok(kvarn_extensions::Connection::Udp(socket))
     } else if let Some(path) = s.strip_prefix("unix:") {
-        let path = path.strip_prefix("//").unwrap_or(path);
-        Ok(kvarn_extensions::Connection::UnixSocket(path.into()))
+        #[cfg(windows)]
+        {
+            Err("Cannot use unix: connections on windows".into())
+        }
+        #[cfg(unix)]
+        {
+            let path = path.strip_prefix("//").unwrap_or(path);
+            Ok(kvarn_extensions::Connection::UnixSocket(path.into()))
+        }
     } else if let Some((protocol, _host)) = s.split_once(':') {
         Err(format!("Protocol {protocol} not recognized"))
     } else {
