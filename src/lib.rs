@@ -97,6 +97,7 @@ pub async fn run(
 
 #[cfg(feature = "bin")]
 #[allow(unused_assignments)]
+#[cfg_attr(windows, allow(unused_mut))]
 pub(crate) fn socket_path() -> std::path::PathBuf {
     use std::path::Path;
     let mut p = Path::new("/run").to_path_buf();
