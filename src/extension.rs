@@ -350,6 +350,7 @@ pub async fn build_extensions(
     cfg_dir: &Path,
 ) -> Result<kvarn::Extensions> {
     let intermediary = IntermediaryExtensions::new(exts);
+    let defaults = intermediary.defaults;
     let (mut exts, v) = intermediary.into_parts();
 
     exts.with_server_header("Kvarn/0.5.0 Moella/0.1.0", true, true);
@@ -359,6 +360,9 @@ pub async fn build_extensions(
         while let Some(ext) = ext2.take() {
             ext2 = ext.mount(&mut exts, host, custom_exts, cfg_dir).await?;
         }
+    }
+    if host.is_secure() && defaults {
+        exts.with_http_to_https_redirect();
     }
 
     Ok(exts)
