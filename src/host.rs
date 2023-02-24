@@ -71,7 +71,7 @@ pub struct SearchEngineAddon {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct AutomaticCertificate {
-    contact: String,
+    contact: Option<String>,
     account_path: Option<String>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -88,6 +88,7 @@ pub enum Host {
         cert: String,
         pk: String,
         path: String,
+        auto_cert: Option<bool>,
         name: Option<String>,
         extensions: Vec<String>,
         options: Option<HostOptions>,
@@ -98,6 +99,7 @@ pub enum Host {
         cert: String,
         pk: String,
         path: String,
+        auto_cert: Option<bool>,
         extensions: Vec<String>,
         options: Option<HostOptions>,
         addons: Option<Vec<HostAddon>>,
@@ -290,19 +292,28 @@ impl Host {
                             }
                         }
 
-                        let email = if let Some(mail) = config.contact.strip_prefix("mailto:") {
-                            mail
-                        } else {
-                            return Err(format!(
-                                "AutomaticCertificate contact needs to be in the format \
-                                `mailto:you@example.org`. You provided `{}`.",
-                                config.contact
-                            ));
-                        };
-                        let creds = config
-                            .account_path
-                            .clone()
-                            .unwrap_or_else(|| format!("lets-encrypt-credentials-{email}.ron"));
+                        let email = config
+                            .contact
+                            .as_ref()
+                            .map(|contact| {
+                                if let Some(mail) = contact.strip_prefix("mailto:") {
+                                    Ok(mail)
+                                } else {
+                                    return Err(format!(
+                                        "AutomaticCertificate contact needs to be in the format \
+                                        `mailto:you@example.org`. You provided `{}`.",
+                                        contact
+                                    ));
+                                }
+                            })
+                            .transpose()?;
+                        let creds = config.account_path.clone().unwrap_or_else(|| {
+                            if let Some(email) = email {
+                                format!("lets-encrypt-credentials-{email}.ron")
+                            } else {
+                                "lets-encrypt-credentials.ron".into()
+                            }
+                        });
 
                         let Some((cert_path, pk_path)) = &cert_path else {
                             return Err("You cannot use `AutomaticCertificate` on an HTTP-only host!".to_owned());
@@ -364,6 +375,25 @@ impl Host {
             cert_collection_senders,
         })
     }
+    fn add_auto_cert(
+        addons: Option<Vec<HostAddon>>,
+        auto_cert: Option<bool>,
+    ) -> (bool, Vec<HostAddon>) {
+        let mut addons = addons.unwrap_or_default();
+
+        let mut contains = addons
+            .iter()
+            .any(|i| matches!(i, HostAddon::AutomaticCertificate(_)));
+
+        if auto_cert.unwrap_or(false) && !contains {
+            addons.push(HostAddon::AutomaticCertificate(AutomaticCertificate {
+                contact: None,
+                account_path: None,
+            }));
+            contains = true;
+        }
+        (contains, addons)
+    }
     pub async fn resolve(
         self,
         ext_bundles: &ExtensionBundles,
@@ -377,15 +407,12 @@ impl Host {
                 pk,
                 path,
                 name: name_override,
+                auto_cert,
                 extensions,
                 options,
                 addons,
             } => {
-                let contains_auto_cert = addons.as_ref().map_or(false, |addons| {
-                    addons
-                        .iter()
-                        .any(|i| matches!(i, HostAddon::AutomaticCertificate(_)))
-                });
+                let (contains_auto_cert, addons) = Self::add_auto_cert(addons, auto_cert);
                 let options = options.unwrap_or_default();
                 let opts = options.clone().resolve();
                 let cert_path = config_dir.join(cert);
@@ -440,7 +467,7 @@ impl Host {
                     extensions,
                     ext_bundles,
                     options,
-                    addons.unwrap_or_default(),
+                    addons,
                     custom_exts,
                     false,
                     config_dir,
@@ -453,15 +480,12 @@ impl Host {
                 cert,
                 pk,
                 path,
+                auto_cert,
                 extensions,
                 options,
                 addons,
             } => {
-                let contains_auto_cert = addons.as_ref().map_or(false, |addons| {
-                    addons
-                        .iter()
-                        .any(|i| matches!(i, HostAddon::AutomaticCertificate(_)))
-                });
+                let (contains_auto_cert, addons) = Self::add_auto_cert(addons, auto_cert);
                 let cert_path = config_dir.join(cert);
                 let pk_path = config_dir.join(pk);
                 let options = options.unwrap_or_default();
@@ -490,7 +514,7 @@ impl Host {
                     extensions,
                     ext_bundles,
                     options,
-                    addons.unwrap_or_default(),
+                    addons,
                     custom_exts,
                     false,
                     config_dir,
