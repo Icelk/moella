@@ -59,6 +59,9 @@ pub async fn read_and_resolve(
     }
 
     let file = file.as_ref();
+    let root_config_dir = Path::new(file)
+        .parent()
+        .expect("config file is in no directory");
 
     let mut hosts = HashMap::new();
     let mut ports = None;
@@ -133,7 +136,7 @@ pub async fn read_and_resolve(
         }
         for host in cfg.hosts {
             let host = host
-                .resolve(&extensions, custom_extensions, config_dir)
+                .resolve(&extensions, custom_extensions, config_dir, root_config_dir)
                 .await?;
 
             info!(
@@ -272,6 +275,7 @@ pub async fn construct_collection(
 ) -> Result<Arc<kvarn::host::Collection>> {
     let mut b = kvarn::host::Collection::builder();
     let mut se = vec![];
+    let mut cert_collection_senders = Vec::new();
     for host in host_names {
         let host = hosts
             .get(&host)
@@ -282,6 +286,7 @@ pub async fn construct_collection(
         for se_handle in host.search_engine_handles {
             se.push((host.host.name.clone(), se_handle))
         }
+        cert_collection_senders.extend(host.cert_collection_senders);
         if default_host.map_or(false, |default| default == host.host.name) {
             // we can take, because we're guaranteed only 1 host with this name will exist
             default_host.take();
@@ -291,6 +296,10 @@ pub async fn construct_collection(
         }
     }
     let collection = b.build();
+
+    for cert_collection_sender in cert_collection_senders {
+        cert_collection_sender.send(collection.clone()).unwrap();
+    }
     for (host, se) in se {
         // assume we'll watch for the rest of time
         core::mem::forget(
