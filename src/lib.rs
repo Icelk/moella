@@ -34,7 +34,7 @@ pub fn command() -> clap::Command {
     )
     .arg(
         Arg::new("host")
-            .short('d')
+            .short('h')
             .long("host")
             .help("Set the default host to show")
             .num_args(1),
@@ -53,6 +53,13 @@ pub fn command() -> clap::Command {
                 when running the kvarnctl, else it won't find this instance!",
             )
             .default_value("kvarn.sock"),
+    )
+    .disable_help_flag(true)
+    .arg(
+        Arg::new("help")
+            .long("help")
+            .action(clap::ArgAction::Help)
+            .help("Print help"),
     )
 }
 
