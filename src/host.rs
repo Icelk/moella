@@ -73,6 +73,7 @@ pub struct SearchEngineAddon {
 pub struct AutomaticCertificate {
     contact: Option<String>,
     account_path: Option<String>,
+    force_renew_on_start: Option<bool>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
@@ -342,7 +343,7 @@ impl Host {
                             },
                             &host,
                             &mut extensions,
-                            !has_cert,
+                            !has_cert || config.force_renew_on_start.unwrap_or(false),
                             config.contact.clone(),
                             root_config_dir.join(creds),
                             cert_path,
@@ -389,6 +390,7 @@ impl Host {
             addons.push(HostAddon::AutomaticCertificate(AutomaticCertificate {
                 contact: None,
                 account_path: None,
+                force_renew_on_start: None,
             }));
             contains = true;
         }
