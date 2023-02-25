@@ -348,6 +348,7 @@ pub async fn build_extensions(
     host: &kvarn::host::Host,
     custom_exts: &CustomExtensions,
     cfg_dir: &Path,
+    has_auto_cert: bool,
 ) -> Result<kvarn::Extensions> {
     let intermediary = IntermediaryExtensions::new(exts);
     let defaults = intermediary.defaults;
@@ -361,7 +362,7 @@ pub async fn build_extensions(
             ext2 = ext.mount(&mut exts, host, custom_exts, cfg_dir).await?;
         }
     }
-    if host.is_secure() && defaults {
+    if (host.is_secure() || has_auto_cert) && defaults {
         exts.with_http_to_https_redirect();
     }
 

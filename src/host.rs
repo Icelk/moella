@@ -119,6 +119,7 @@ impl Host {
         extensions: &ExtensionBundles,
         host: &kvarn::host::Host,
         custom_exts: &CustomExtensions,
+        has_auto_cert: bool,
     ) -> Result<kvarn::Extensions> {
         let mut exts = selected.iter();
         if let Some(first) = exts.next() {
@@ -132,6 +133,7 @@ impl Host {
                 Path::new(&ext.1)
                     .parent()
                     .expect("config file is in no directory"),
+                has_auto_cert,
             )
             .await?;
             for ext in exts {
@@ -167,6 +169,7 @@ impl Host {
         execute_extensions_addons: bool,
         config_dir: &Path,
         root_config_dir: &Path,
+        has_auto_cert: bool,
     ) -> Result<CloneableHost> {
         let opts_clone = options.clone();
         if let Some(true) = options.disable_fs_cache {
@@ -202,7 +205,8 @@ impl Host {
         // set extensions
         if execute_extensions_addons {
             let mut extensions =
-                Self::resolve_extensions(&exts, ext_bundles, &host, custom_exts).await?;
+                Self::resolve_extensions(&exts, ext_bundles, &host, custom_exts, has_auto_cert)
+                    .await?;
             for addon in &addons {
                 match addon {
                     HostAddon::SearchEngine(config) => {
@@ -374,6 +378,7 @@ impl Host {
 
             search_engine_handles: se_handles,
             cert_collection_senders,
+            has_auto_cert,
         })
     }
     fn add_auto_cert(
@@ -474,6 +479,7 @@ impl Host {
                     false,
                     config_dir,
                     root_config_dir,
+                    contains_auto_cert,
                 )
                 .await
             }
@@ -521,6 +527,7 @@ impl Host {
                     false,
                     config_dir,
                     root_config_dir,
+                    contains_auto_cert,
                 )
                 .await
             }
@@ -550,6 +557,7 @@ impl Host {
                     false,
                     config_dir,
                     root_config_dir,
+                    false,
                 )
                 .await
             }
@@ -571,6 +579,7 @@ pub struct CloneableHost {
     // addons
     pub search_engine_handles: Vec<kvarn_search::SearchEngineHandle>,
     pub cert_collection_senders: Vec<tokio::sync::oneshot::Sender<Arc<kvarn::host::Collection>>>,
+    pub has_auto_cert: bool,
 }
 impl CloneableHost {
     pub async fn clone_with_extensions(
@@ -589,6 +598,7 @@ impl CloneableHost {
             true,
             &self.config_dir,
             &self.root_config_dir,
+            self.has_auto_cert,
         )
         .await
     }
