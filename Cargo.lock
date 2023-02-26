@@ -1760,9 +1760,9 @@ dependencies = [
 
 [[package]]
 name = "small-acme"
-version = "0.1.0"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f45fa188a54e2ff43b3a8ff92300b3fb66ea4351baf42072f61a0c95cf628645"
+checksum = "bc246580116ae001faddd60fc57aea220051d043f19be6519b822413a15ce012"
 dependencies = [
  "base64 0.21.0",
  "ring",
