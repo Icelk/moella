@@ -3,6 +3,7 @@ use std::fmt::{self, Display};
 use std::sync::Arc;
 
 use crate::config::{CustomExtensions, ExtensionBundles, HostCollections, Hosts, Result};
+use kvarn::prelude::{CompactString, ToCompactString};
 use log::info;
 use serde::{Deserialize, Serialize};
 
@@ -24,12 +25,12 @@ impl HostSource {
     ) -> Result<Arc<kvarn::host::Collection>> {
         match self {
             HostSource::Collection(name) => host_collections
-                .get(&name)
+                .get(name.as_str())
                 .cloned()
                 .ok_or_else(|| format!("Didn't find a host collection with name {name}.")),
             HostSource::Hosts(source) => {
                 let collection = crate::config::construct_collection(
-                    source,
+                    source.into_iter().map(CompactString::from).collect(),
                     hosts,
                     exts,
                     custom_exts,
@@ -40,7 +41,7 @@ impl HostSource {
             }
             HostSource::Host(source) => {
                 let collection = crate::config::construct_collection(
-                    vec![source],
+                    vec![source.to_compact_string()],
                     hosts,
                     exts,
                     custom_exts,

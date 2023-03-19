@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use crate::config::{CustomExtensions, ExtensionBundles, Result};
+use kvarn::prelude::ToCompactString;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
@@ -31,10 +32,10 @@ impl HostOptions {
             options.disable_client_cache = b;
         }
         if let Some(d) = self.folder_default {
-            options.folder_default = Some(d);
+            options.folder_default = Some(d.to_compact_string());
         }
         if let Some(d) = self.extension_default {
-            options.extension_default = Some(d);
+            options.extension_default = Some(d.to_compact_string());
         }
         if let Some(d) = self.public_data_directory {
             options.public_data_dir = Some(d.into());
@@ -124,7 +125,7 @@ impl Host {
         let mut exts = selected.iter();
         if let Some(first) = exts.next() {
             let ext = extensions
-                .get(first)
+                .get(first.as_str())
                 .ok_or_else(|| format!("Didn't find an extension bundle with name {first}"))?;
             let mut main = crate::extension::build_extensions(
                 ext.0.clone(),
@@ -138,7 +139,7 @@ impl Host {
             .await?;
             for ext in exts {
                 let ext = extensions
-                    .get(ext)
+                    .get(ext.as_str())
                     .ok_or_else(|| format!("Didn't find an extension bundle with name {ext}"))?;
                 main = crate::extension::build_extensions_inherit(
                     ext.0.clone(),
@@ -427,9 +428,9 @@ impl Host {
                 let host = match (name_override, contains_auto_cert) {
                     (Some(name), false) => kvarn::host::Host::try_read_fs(
                         name,
-                        &cert_path,
-                        &pk_path,
-                        config_dir.join(path),
+                        cert_path.to_string_lossy(),
+                        pk_path.to_string_lossy(),
+                        config_dir.join(path).to_string_lossy(),
                         kvarn::Extensions::empty(),
                         opts,
                     )
@@ -440,9 +441,9 @@ impl Host {
                         )
                     })?,
                     (None, false) => kvarn::host::Host::read_fs_name_from_cert(
-                        &cert_path,
-                        &pk_path,
-                        config_dir.join(path),
+                        cert_path.to_string_lossy(),
+                        pk_path.to_string_lossy(),
+                        config_dir.join(path).to_string_lossy(),
                         kvarn::Extensions::empty(),
                         opts,
                     )
@@ -454,9 +455,9 @@ impl Host {
                     })?,
                     (Some(name), true) => kvarn::host::Host::try_read_fs(
                         name,
-                        &cert_path,
-                        &pk_path,
-                        config_dir.join(path),
+                        cert_path.to_string_lossy(),
+                        pk_path.to_string_lossy(),
+                        config_dir.join(path).to_string_lossy(),
                         kvarn::Extensions::empty(),
                         opts,
                     )
@@ -501,9 +502,9 @@ impl Host {
 
                 let host = kvarn::host::Host::try_read_fs(
                     name,
-                    &cert_path,
-                    &pk_path,
-                    config_dir.join(path),
+                    cert_path.to_string_lossy(),
+                    pk_path.to_string_lossy(),
+                    config_dir.join(path).to_string_lossy(),
                     kvarn::Extensions::empty(),
                     opts,
                 );
@@ -542,7 +543,7 @@ impl Host {
                 let opts = options.clone().resolve();
                 let host = kvarn::host::Host::unsecure(
                     name,
-                    config_dir.join(path),
+                    config_dir.join(path).to_string_lossy(),
                     kvarn::Extensions::empty(),
                     opts,
                 );

@@ -1,6 +1,7 @@
 use crate::extension::Extension;
 use crate::host::Host;
 use crate::port::PortsKind;
+use kvarn::prelude::{CompactString, ToCompactString};
 use log::{info, warn};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -65,7 +66,7 @@ pub async fn read_and_resolve(
 
     let mut hosts = HashMap::new();
     let mut ports = None;
-    let mut collections: HashMap<String, Vec<String>> = HashMap::new();
+    let mut collections: HashMap<CompactString, Vec<CompactString>> = HashMap::new();
     let mut extensions = HashMap::new();
 
     let mut imports: VecDeque<Imported> = VecDeque::new();
@@ -126,13 +127,13 @@ pub async fn read_and_resolve(
             ports = Some((ports_kind, import.clone()))
         }
         for (name, ext) in cfg.extensions {
-            if let Some((_, file)) = extensions.get(&name) {
+            if let Some((_, file)) = extensions.get(name.as_str()) {
                 return Err(format!(
                     "Duplicate extension with name {name}. Second occurrence in file {import:?}. \
                     First occurrence in {file:?}.",
                 ));
             }
-            extensions.insert(name, (ext, import.clone()));
+            extensions.insert(name.to_compact_string(), (ext, import.clone()));
         }
         for host in cfg.hosts {
             let host = host
@@ -157,10 +158,10 @@ pub async fn read_and_resolve(
 
         if let Some(collection) = cfg.host_collections {
             for (name, mut host_names) in collection {
-                let entry = collections.entry(name);
+                let entry = collections.entry(name.to_compact_string());
                 let entry = entry.or_default();
-                host_names.append(entry);
-                *entry = host_names;
+                host_names.extend(entry.iter().map(|v| v.to_string()));
+                *entry = host_names.into_iter().map(CompactString::from).collect();
             }
         }
     }
@@ -267,7 +268,7 @@ impl Default for CustomExtensions {
 }
 
 pub async fn construct_collection(
-    host_names: Vec<String>,
+    host_names: Vec<CompactString>,
     hosts: &Hosts,
     exts: &ExtensionBundles,
     custom_exts: &CustomExtensions,
@@ -303,7 +304,7 @@ pub async fn construct_collection(
     for (host, se) in se {
         // assume we'll watch for the rest of time
         core::mem::forget(
-            se.watch(&host, collection.clone())
+            se.watch(host, collection.clone())
                 .await
                 .map_err(|err| format!("Failed to start search engine watch: {err:?}"))?,
         );
@@ -311,6 +312,6 @@ pub async fn construct_collection(
     Ok(collection)
 }
 
-pub type HostCollections = HashMap<String, Arc<kvarn::host::Collection>>;
-pub type Hosts = HashMap<String, (crate::host::CloneableHost, PathBuf)>;
-pub type ExtensionBundles = HashMap<String, (Vec<crate::extension::Extension>, PathBuf)>;
+pub type HostCollections = HashMap<CompactString, Arc<kvarn::host::Collection>>;
+pub type Hosts = HashMap<CompactString, (crate::host::CloneableHost, PathBuf)>;
+pub type ExtensionBundles = HashMap<CompactString, (Vec<crate::extension::Extension>, PathBuf)>;
