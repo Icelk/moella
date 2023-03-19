@@ -50,6 +50,8 @@ pub enum Extension {
     CspEmpty,
     Csp(HashMap<String, CspRule>),
 
+    StreamBody(Filter),
+
     Custom(String, Option<ron::Value>),
 }
 impl Extension {
@@ -302,6 +304,11 @@ impl Extension {
                     Id::new(1000, "redirect to other path on file system").no_override(),
                 );
             }
+            Self::StreamBody(filter) => exts.add_prepare_fn(
+                Box::new(move |req, _| filter.resolve(req.uri().path())),
+                kvarn::extensions::stream_body(),
+                kvarn::extensions::Id::new(-21445, "Stream file").no_override(),
+            ),
             Self::Custom(name, data) => {
                 let data = data.unwrap_or(ron::Value::Unit);
                 let ext = custom_exts
