@@ -30,6 +30,7 @@ kvarn-auth = { path = "../kvarn-auth" }
 # kvarn-auth = "0.1"
 http = "0.2"
 tokio = { version = "1, >=1.23.1", features = ["fs"] }
+tokio-uring = { git = "https://github.com/tokio-rs/tokio-uring", optional = true }
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 ron = "0.8.0"
@@ -43,6 +44,7 @@ libc = { version = "0.2", default-features = false }
 [features]
 default = []
 bin = ["env_logger", "clap", "tokio/rt-multi-thread", "tokio/macros"]
+uring = ["kvarn-extensions/uring", "kvarn/uring", "tokio-uring"]
 
 [profile.distribution]
 inherits = "release"

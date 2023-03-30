@@ -305,11 +305,11 @@ impl Host {
                                 if let Some(mail) = contact.strip_prefix("mailto:") {
                                     Ok(mail)
                                 } else {
-                                    return Err(format!(
+                                    Err(format!(
                                         "AutomaticCertificate contact needs to be in the format \
                                         `mailto:you@example.org`. You provided `{}`.",
                                         contact
-                                    ));
+                                    ))
                                 }
                             })
                             .transpose()?;
