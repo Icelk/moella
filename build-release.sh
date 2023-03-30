@@ -47,6 +47,9 @@ cp ./target/x86_64-apple-darwin/distribution/moella moella-macos
 x86_64-apple-darwin14-strip $wd/moella-macos
 cp ./target/distribution/moella moella-linux
 
+cb -F uring,bin
+cp ./target/distribution/moella moella-linux-uring
+
 cd ../kvarn/ctl
 cp ../target/x86_64-apple-darwin/distribution/kvarnctl $wd/kvarnctl-macos
 x86_64-apple-darwin14-strip $wd/kvarnctl-macos
