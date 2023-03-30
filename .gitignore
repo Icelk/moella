@@ -1,7 +1,1 @@
 /target
-*.pem
-mail-hosts.txt
-*.passwd
-*.secret
-agde-data
-icelk-views*
