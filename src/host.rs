@@ -7,6 +7,19 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 #[serde(deny_unknown_fields)]
+pub struct Limiter {
+    max_requests_per_interval: usize,
+    interval: f64,
+    check_one_in_n_requests: usize,
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum Limit {
+    Limit(Limiter),
+    AllowAll,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct HostOptions {
     disable_fs: Option<bool>,
     disable_client_cache: Option<bool>,
@@ -20,6 +33,7 @@ pub struct HostOptions {
     extension_default: Option<String>,
     public_data_directory: Option<String>,
     alternative_names: Option<Vec<String>>,
+    limiter: Option<Limit>,
 }
 impl HostOptions {
     fn resolve(self) -> kvarn::host::Options {
@@ -197,6 +211,20 @@ impl Host {
         if let Some(alts) = options.alternative_names {
             for alt in alts {
                 host.add_alternative_name(alt);
+            }
+        }
+        if let Some(limiter) = &options.limiter {
+            match limiter {
+                Limit::Limit(opts) => {
+                    host.limiter = kvarn::limiting::Manager::new(
+                        opts.max_requests_per_interval,
+                        opts.check_one_in_n_requests,
+                        opts.interval,
+                    );
+                }
+                Limit::AllowAll => {
+                    host.limiter.disable();
+                }
             }
         }
 
