@@ -122,9 +122,11 @@ impl Extension {
                 }
             }
             Self::AllDefaults => kvarn_extensions::mount_all(exts),
-            Self::Templates => {
-                exts.add_present_internal("tmpl", Box::new(kvarn_extensions::templates_ext))
-            }
+            // `TODO`: use cache from ↑
+            Self::Templates => exts.add_present_internal(
+                "tmpl",
+                kvarn_extensions::templates_ext(kvarn_extensions::templates::Cache::new()),
+            ),
             Self::Http2Push {
                 push_interval,
                 check_every_request,
@@ -472,14 +474,14 @@ pub enum CspRule {
     Empty,
 }
 impl CspRule {
-    pub fn into_kvarn(self, rule_set: &kvarn::csp::Csp) -> Result<kvarn::csp::Rule> {
+    pub fn into_kvarn(self, rule_set: &kvarn::csp::Csp) -> Result<kvarn::csp::ComputedRule> {
         match self {
             CspRule::FromDefault(map) => {
                 let mut rule = kvarn::csp::Rule::default();
                 for (directive, sources) in map {
                     rule = directive.attach(CspSource::into_kvarn(sources), rule);
                 }
-                Ok(rule)
+                Ok(rule.into())
             }
             CspRule::Inherit(base, map) => {
                 let mut rule = rule_set
@@ -487,7 +489,9 @@ impl CspRule {
                     .ok_or_else(|| format!("the CSP rule you inherit from ({base}) doesn't exist"))?
                     .clone();
                 for (directive, sources) in map {
-                    rule = directive.attach(CspSource::into_kvarn(sources), rule);
+                    rule = directive
+                        .attach(CspSource::into_kvarn(sources), rule.0)
+                        .into();
                 }
                 Ok(rule)
             }
@@ -496,9 +500,9 @@ impl CspRule {
                 for (directive, sources) in map {
                     rule = directive.attach(CspSource::into_kvarn(sources), rule);
                 }
-                Ok(rule)
+                Ok(rule.into())
             }
-            CspRule::Empty => Ok(kvarn::csp::Rule::empty()),
+            CspRule::Empty => Ok(kvarn::csp::Rule::empty().into()),
         }
     }
 }
