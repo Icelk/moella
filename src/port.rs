@@ -21,7 +21,7 @@ impl HostSource {
         hosts: &Hosts,
         exts: &ExtensionBundles,
         custom_exts: &CustomExtensions,
-        default_host: &mut Option<&str>,
+        default_host: &Option<&str>,
     ) -> Result<Arc<kvarn::host::Collection>> {
         match self {
             HostSource::Collection(name) => host_collections
@@ -77,7 +77,7 @@ impl PortsKind {
         exts: &ExtensionBundles,
         custom_exts: &CustomExtensions,
         high_ports: bool,
-        default_host: &mut Option<&str>,
+        default_host: &Option<&str>,
     ) -> Result<Vec<kvarn::PortDescriptor>> {
         enum NPorts<'a> {
             One(u16),

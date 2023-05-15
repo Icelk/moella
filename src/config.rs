@@ -51,7 +51,7 @@ pub async fn read_and_resolve(
     file: impl AsRef<str>,
     custom_extensions: &CustomExtensions,
     high_ports: bool,
-    mut default_host: Option<&str>,
+    default_host: Option<&str>,
 ) -> Result<kvarn::RunConfig> {
     #[derive(Debug)]
     enum Imported {
@@ -165,6 +165,16 @@ pub async fn read_and_resolve(
             }
         }
     }
+
+    if let Some(default_host) = default_host {
+        if !hosts.contains_key(default_host) {
+            return Err(format!(
+                "Your choosen default host {default_host} wasn't found. Available: {:?}",
+                hosts.keys().collect::<Vec<_>>()
+            ));
+        }
+    }
+
     let mut built_collections = HashMap::new();
     for (name, host_names) in collections {
         info!("Create host collection \"{name}\" with hosts {host_names:?}");
@@ -173,7 +183,7 @@ pub async fn read_and_resolve(
             &hosts,
             &extensions,
             custom_extensions,
-            &mut default_host,
+            &default_host,
         )
         .await?;
         built_collections.insert(name, collection);
@@ -188,15 +198,11 @@ pub async fn read_and_resolve(
             &extensions,
             custom_extensions,
             high_ports,
-            &mut default_host,
+            &default_host,
         )
         .await?
     {
         rc = rc.bind(descriptor);
-    }
-
-    if let Some(default) = default_host {
-        return Err(format!("Your choosen default host {default} wasn't found."));
     }
 
     Ok(rc)
@@ -272,7 +278,7 @@ pub async fn construct_collection(
     hosts: &Hosts,
     exts: &ExtensionBundles,
     custom_exts: &CustomExtensions,
-    default_host: &mut Option<&str>,
+    default_host: &Option<&str>,
 ) -> Result<Arc<kvarn::host::Collection>> {
     let mut b = kvarn::host::Collection::builder();
     let mut se = vec![];
@@ -289,8 +295,6 @@ pub async fn construct_collection(
         }
         cert_collection_senders.extend(host.cert_collection_senders);
         if default_host.map_or(false, |default| default == host.host.name) {
-            // we can take, because we're guaranteed only 1 host with this name will exist
-            default_host.take();
             b = b.default(host.host);
         } else {
             b = b.insert(host.host);
