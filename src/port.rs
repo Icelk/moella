@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::fmt::{self, Display};
 use std::sync::Arc;
 
-use crate::config::{CustomExtensions, ExtensionBundles, HostCollections, Hosts, Result};
+use crate::config::{
+    CliOptions, CustomExtensions, ExtensionBundles, HostCollections, Hosts, Result,
+};
 use kvarn::prelude::{CompactString, ToCompactString};
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -21,7 +23,7 @@ impl HostSource {
         hosts: &Hosts,
         exts: &ExtensionBundles,
         custom_exts: &CustomExtensions,
-        default_host: &Option<&str>,
+        opts: &CliOptions<'_>,
     ) -> Result<Arc<kvarn::host::Collection>> {
         match self {
             HostSource::Collection(name) => host_collections
@@ -34,7 +36,7 @@ impl HostSource {
                     hosts,
                     exts,
                     custom_exts,
-                    default_host,
+                    opts,
                 )
                 .await?;
                 Ok(collection)
@@ -45,7 +47,7 @@ impl HostSource {
                     hosts,
                     exts,
                     custom_exts,
-                    default_host,
+                    opts,
                 )
                 .await?;
                 Ok(collection)
@@ -76,8 +78,7 @@ impl PortsKind {
         hosts: &Hosts,
         exts: &ExtensionBundles,
         custom_exts: &CustomExtensions,
-        high_ports: bool,
-        default_host: &Option<&str>,
+        opts: &CliOptions<'_>,
     ) -> Result<Vec<kvarn::PortDescriptor>> {
         enum NPorts<'a> {
             One(u16),
@@ -121,7 +122,7 @@ impl PortsKind {
                             port,
                             entry
                                 .source
-                                .resolve(host_collections, hosts, exts, custom_exts, default_host)
+                                .resolve(host_collections, hosts, exts, custom_exts, opts)
                                 .await?,
                         )
                     } else {
@@ -129,7 +130,7 @@ impl PortsKind {
                             port,
                             entry
                                 .source
-                                .resolve(host_collections, hosts, exts, custom_exts, default_host)
+                                .resolve(host_collections, hosts, exts, custom_exts, opts)
                                 .await?,
                         )
                     };
@@ -138,7 +139,7 @@ impl PortsKind {
                 Ok(v)
             }
             PortsKind::Standard(source) => {
-                let ports = if high_ports {
+                let ports = if opts.high_ports {
                     &[8080, 8443]
                 } else {
                     &[80, 443]
@@ -146,7 +147,7 @@ impl PortsKind {
                 log_bind(&source, NPorts::Several(ports));
 
                 let collection = source
-                    .resolve(host_collections, hosts, exts, custom_exts, default_host)
+                    .resolve(host_collections, hosts, exts, custom_exts, opts)
                     .await?;
                 let v = vec![
                     kvarn::PortDescriptor::unsecure(ports[0], collection.clone()),
@@ -155,21 +156,21 @@ impl PortsKind {
                 Ok(v)
             }
             PortsKind::HttpsOnly(source) => {
-                let port = if high_ports { 8443 } else { 443 };
+                let port = if opts.high_ports { 8443 } else { 443 };
                 log_bind(&source, NPorts::One(port));
 
                 let collection = source
-                    .resolve(host_collections, hosts, exts, custom_exts, default_host)
+                    .resolve(host_collections, hosts, exts, custom_exts, opts)
                     .await?;
                 let v = vec![kvarn::PortDescriptor::new(port, collection)];
                 Ok(v)
             }
             PortsKind::HttpOnly(source) => {
-                let port = if high_ports { 8080 } else { 80 };
+                let port = if opts.high_ports { 8080 } else { 80 };
                 log_bind(&source, NPorts::One(port));
 
                 let collection = source
-                    .resolve(host_collections, hosts, exts, custom_exts, default_host)
+                    .resolve(host_collections, hosts, exts, custom_exts, opts)
                     .await?;
                 let v = vec![kvarn::PortDescriptor::unsecure(port, collection)];
                 Ok(v)

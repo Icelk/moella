@@ -21,6 +21,12 @@ pub(crate) struct KvarnConfig {
     import: Option<Vec<String>>,
 }
 
+pub struct CliOptions<'a> {
+    pub high_ports: bool,
+    pub cache: bool,
+    pub default_host: Option<&'a str>,
+}
+
 /// Parse config at `path`.
 #[allow(clippy::or_fun_call)] // it's just as_ref()
 async fn read_config(file: impl AsRef<Path>) -> Result<KvarnConfig> {
@@ -50,8 +56,7 @@ async fn read_config(file: impl AsRef<Path>) -> Result<KvarnConfig> {
 pub async fn read_and_resolve(
     file: impl AsRef<str>,
     custom_extensions: &CustomExtensions,
-    high_ports: bool,
-    default_host: Option<&str>,
+    opts: &CliOptions<'_>,
 ) -> Result<kvarn::RunConfig> {
     #[derive(Debug)]
     enum Imported {
@@ -166,7 +171,7 @@ pub async fn read_and_resolve(
         }
     }
 
-    if let Some(default_host) = default_host {
+    if let Some(default_host) = opts.default_host {
         if !hosts.contains_key(default_host) {
             return Err(format!(
                 "Your choosen default host {default_host} wasn't found. Available: {:?}",
@@ -178,14 +183,8 @@ pub async fn read_and_resolve(
     let mut built_collections = HashMap::new();
     for (name, host_names) in collections {
         info!("Create host collection \"{name}\" with hosts {host_names:?}");
-        let collection = construct_collection(
-            host_names,
-            &hosts,
-            &extensions,
-            custom_extensions,
-            &default_host,
-        )
-        .await?;
+        let collection =
+            construct_collection(host_names, &hosts, &extensions, custom_extensions, opts).await?;
         built_collections.insert(name, collection);
     }
     let mut rc = kvarn::RunConfig::new();
@@ -197,8 +196,7 @@ pub async fn read_and_resolve(
             &hosts,
             &extensions,
             custom_extensions,
-            high_ports,
-            &default_host,
+            opts,
         )
         .await?
     {
@@ -278,13 +276,13 @@ pub async fn construct_collection(
     hosts: &Hosts,
     exts: &ExtensionBundles,
     custom_exts: &CustomExtensions,
-    default_host: &Option<&str>,
+    opts: &CliOptions<'_>,
 ) -> Result<Arc<kvarn::host::Collection>> {
     let mut b = kvarn::host::Collection::builder();
     let mut se = vec![];
     let mut cert_collection_senders = Vec::new();
     for host in host_names {
-        let host = hosts
+        let mut host = hosts
             .get(&host)
             .ok_or_else(|| format!("Didn't find a host with name {host}."))?
             .0
@@ -294,7 +292,13 @@ pub async fn construct_collection(
             se.push((host.host.name.clone(), se_handle))
         }
         cert_collection_senders.extend(host.cert_collection_senders);
-        if default_host.map_or(false, |default| default == host.host.name) {
+        if !opts.cache {
+            host.host.disable_client_cache().disable_server_cache();
+        }
+        if opts
+            .default_host
+            .map_or(false, |default| default == host.host.name)
+        {
             b = b.default(host.host);
         } else {
             b = b.insert(host.host);

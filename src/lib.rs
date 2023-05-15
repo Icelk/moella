@@ -33,6 +33,13 @@ pub fn command() -> clap::Command {
             .action(clap::ArgAction::SetTrue),
     )
     .arg(
+        Arg::new("dev")
+            .long("dev")
+            .help("Enable development environment. Uses high ports & disables all caches.")
+            .conflicts_with("high_ports")
+            .action(clap::ArgAction::SetTrue),
+    )
+    .arg(
         Arg::new("host")
             .short('h')
             .long("host")
@@ -72,16 +79,23 @@ pub fn command() -> clap::Command {
 pub async fn run(
     custom_extensions: &config::CustomExtensions,
 ) -> std::sync::Arc<kvarn::shutdown::Manager> {
+    use self::config::CliOptions;
+
     let env_log = env_logger::Env::new().filter_or("KVARN_LOG", "rustls=off,info");
     env_logger::Builder::from_env(env_log).init();
 
     let matches = command().get_matches();
 
+    let opts = CliOptions {
+        high_ports: matches.get_flag("high_ports") || matches.get_flag("dev"),
+        cache: !matches.get_flag("dev"),
+        default_host: matches.get_one::<String>("host").map(String::as_str),
+    };
+
     let mut rc = match config::read_and_resolve(
         matches.get_one::<String>("config").expect("it's required"),
         custom_extensions,
-        matches.get_flag("high_ports"),
-        matches.get_one::<String>("host").map(String::as_str),
+        &opts,
     )
     .await
     {
