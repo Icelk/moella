@@ -7,6 +7,7 @@
 # ar = "x86_64-apple-darwin14-ar"
 
 cb() {
+    echo "Run in $PWD" cargo build --profile distribution $@
     cargo build --profile distribution $@
 }
 cb_mac() {
@@ -40,6 +41,8 @@ cb &
 
 wait
 
+echo "All builds complete (except uring)"
+
 cd $wd
 cp ./target/x86_64-pc-windows-gnu/distribution/moella.exe $wd/
 cp ./target/x86_64-apple-darwin/distribution/moella moella-macos
@@ -47,6 +50,7 @@ cp ./target/x86_64-apple-darwin/distribution/moella moella-macos
 x86_64-apple-darwin14-strip $wd/moella-macos
 cp ./target/distribution/moella moella-linux
 
+echo "Starting uring build"
 cb -F uring,bin
 cp ./target/distribution/moella moella-linux-uring
 
