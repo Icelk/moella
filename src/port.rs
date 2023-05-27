@@ -15,6 +15,7 @@ pub enum HostSource {
     Collection(String),
     Hosts(Vec<String>),
     Host(String),
+    All,
 }
 impl HostSource {
     pub async fn resolve(
@@ -44,6 +45,17 @@ impl HostSource {
             HostSource::Host(source) => {
                 let collection = crate::config::construct_collection(
                     vec![source.to_compact_string()],
+                    hosts,
+                    exts,
+                    custom_exts,
+                    opts,
+                )
+                .await?;
+                Ok(collection)
+            }
+            HostSource::All => {
+                let collection = crate::config::construct_collection(
+                    hosts.keys().cloned().collect(),
                     hosts,
                     exts,
                     custom_exts,
@@ -109,6 +121,7 @@ impl PortsKind {
                 }
                 HostSource::Hosts(hosts) => info!("Bind hosts {hosts:?} to {port}"),
                 HostSource::Host(host) => info!("Bind host collection \"{host}\" to {port}"),
+                HostSource::All => info!("Binding all hosts to {port}"),
             };
         };
 
