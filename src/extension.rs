@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -39,16 +39,16 @@ pub enum Extension {
         working_directory: String,
     },
     ReverseProxy(ReverseProxy),
-    ClientCache(HashMap<String, ClientCachePreference>),
+    ClientCache(BTreeMap<String, ClientCachePreference>),
     Auth(Auth),
     ViewCounter(ViewCounter),
     Link(Filter, String),
 
     CorsSafe,
-    Cors(HashMap<String, CorsRule>),
+    Cors(BTreeMap<String, CorsRule>),
     CspSafe,
     CspEmpty,
-    Csp(HashMap<String, CspRule>),
+    Csp(BTreeMap<String, CspRule>),
 
     StreamBody(Filter),
 
@@ -509,20 +509,28 @@ impl CspRule {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub enum CspSource {
-    Uri(String),
+    Same,
     UnsafeInline,
     UnsafeEval,
+    WasmUnsafeEval,
+    StrictDynamic,
+    Uri(String),
     Scheme(String),
+    Raw(String),
 }
 impl CspSource {
     pub fn into_kvarn(v: Vec<CspSource>) -> kvarn::csp::ValueSet {
         let mut base = kvarn::csp::ValueSet::default();
         for source in v {
             match source {
-                CspSource::Uri(uri) => base = base.uri(uri),
+                CspSource::Same => base = base.push(kvarn::prelude::CspValue::Same),
                 CspSource::UnsafeInline => base = base.unsafe_inline(),
                 CspSource::UnsafeEval => base = base.unsafe_eval(),
+                CspSource::WasmUnsafeEval => base = base.wasm_unsafe_eval(),
+                CspSource::StrictDynamic => base = base.strict_dynamic(),
+                CspSource::Uri(uri) => base = base.uri(uri),
                 CspSource::Scheme(scheme) => base = base.scheme(scheme),
+                CspSource::Raw(s) => base = base.raw(s),
             }
         }
         base
@@ -658,7 +666,7 @@ pub struct CorsRule {
     origins: Vec<String>,
     methods: Option<Vec<Method>>,
 }
-fn build_cors(map: HashMap<String, CorsRule>) -> kvarn::cors::Cors {
+fn build_cors(map: BTreeMap<String, CorsRule>) -> kvarn::cors::Cors {
     let mut cors = kvarn::cors::Cors::empty();
     for (path, config) in map {
         let mut rule = if let Some(cache) = config.cache {
