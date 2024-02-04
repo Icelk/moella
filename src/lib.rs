@@ -81,7 +81,8 @@ pub async fn run(
 ) -> std::sync::Arc<kvarn::shutdown::Manager> {
     use self::config::CliOptions;
 
-    let env_log = env_logger::Env::new().filter_or("KVARN_LOG", "rustls=off,h3::proto::frame=error,info");
+    let env_log =
+        env_logger::Env::new().filter_or("KVARN_LOG", "rustls=off,h3::proto::frame=error,info");
     env_logger::Builder::from_env(env_log).init();
 
     let matches = command().get_matches();

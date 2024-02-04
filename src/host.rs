@@ -350,7 +350,10 @@ impl Host {
                         });
 
                         let Some((cert_path, pk_path)) = &cert_path else {
-                            return Err("You cannot use `AutomaticCertificate` on an HTTP-only host!".to_owned());
+                            return Err(
+                                "You cannot use `AutomaticCertificate` on an HTTP-only host!"
+                                    .to_owned(),
+                            );
                         };
                         let has_cert = { host.certificate.read().unwrap().is_some() };
                         let (tx, rx) = tokio::sync::oneshot::channel();
