@@ -55,7 +55,6 @@ pub enum Extension {
     Custom(String, Option<ron::Value>),
 }
 impl Extension {
-    #[allow(clippy::drop_ref)] // we use drop so we don't get &mut Extension in some codepaths
     async fn mount(
         self,
         exts: &mut kvarn::Extensions,
