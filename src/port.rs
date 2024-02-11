@@ -27,13 +27,28 @@ impl HostSource {
         opts: &CliOptions<'_>,
     ) -> Result<Arc<kvarn::host::Collection>> {
         match self {
-            HostSource::Collection(name) => host_collections
-                .get(name.as_str())
-                .cloned()
-                .ok_or_else(|| format!("Didn't find a host collection with name {name}.")),
+            HostSource::Collection(name) => {
+                let names = &host_collections
+                    .get(name.as_str())
+                    .ok_or_else(|| format!("Didn't find a host collection with name {name}."))?
+                    .0;
+                let collection = crate::config::construct_collection(
+                    names,
+                    hosts,
+                    exts,
+                    custom_exts,
+                    opts,
+                    true,
+                )
+                .await?;
+                Ok(collection)
+            }
             HostSource::Hosts(source) => {
                 let collection = crate::config::construct_collection(
-                    source.into_iter().map(CompactString::from).collect(),
+                    source
+                        .into_iter()
+                        .map(CompactString::from)
+                        .collect::<Vec<_>>(),
                     hosts,
                     exts,
                     custom_exts,
@@ -55,7 +70,7 @@ impl HostSource {
             }
             HostSource::All => {
                 let collection = crate::config::construct_collection(
-                    hosts.keys().cloned().collect(),
+                    hosts.keys().cloned().collect::<Vec<_>>(),
                     hosts,
                     exts,
                     custom_exts,

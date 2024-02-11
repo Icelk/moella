@@ -183,9 +183,16 @@ pub async fn read_and_resolve(
     let mut built_collections = HashMap::new();
     for (name, host_names) in collections {
         info!("Create host collection \"{name}\" with hosts {host_names:?}");
-        let collection =
-            construct_collection(host_names, &hosts, &extensions, custom_extensions, opts).await?;
-        built_collections.insert(name, collection);
+        let collection = construct_collection(
+            &host_names,
+            &hosts,
+            &extensions,
+            custom_extensions,
+            opts,
+            false,
+        )
+        .await?;
+        built_collections.insert(name, (host_names, collection));
     }
     let mut rc = kvarn::RunConfig::new();
     for descriptor in ports
@@ -272,21 +279,22 @@ impl Default for CustomExtensions {
 }
 
 pub async fn construct_collection(
-    host_names: Vec<CompactString>,
+    host_names: impl AsRef<[CompactString]>,
     hosts: &Hosts,
     exts: &ExtensionBundles,
     custom_exts: &CustomExtensions,
     opts: &CliOptions<'_>,
+    execute_extensions_addons: bool,
 ) -> Result<Arc<kvarn::host::Collection>> {
     let mut b = kvarn::host::Collection::builder();
     let mut se = vec![];
     let mut cert_collection_senders = Vec::new();
-    for host in host_names {
+    for host in host_names.as_ref() {
         let mut host = hosts
-            .get(&host)
+            .get(host)
             .ok_or_else(|| format!("Didn't find a host with name {host}."))?
             .0
-            .clone_with_extensions(exts, custom_exts)
+            .clone_with_extensions(exts, custom_exts, execute_extensions_addons, opts.dev)
             .await?;
         for se_handle in host.search_engine_handles {
             se.push((host.host.name.clone(), se_handle))
@@ -320,6 +328,7 @@ pub async fn construct_collection(
     Ok(collection)
 }
 
-pub type HostCollections = HashMap<CompactString, Arc<kvarn::host::Collection>>;
+pub type HostCollections =
+    HashMap<CompactString, (Vec<CompactString>, Arc<kvarn::host::Collection>)>;
 pub type Hosts = HashMap<CompactString, (crate::host::CloneableHost, PathBuf)>;
 pub type ExtensionBundles = HashMap<CompactString, (Vec<crate::extension::Extension>, PathBuf)>;

@@ -618,6 +618,8 @@ impl CloneableHost {
         &self,
         exts: &ExtensionBundles,
         custom_exts: &CustomExtensions,
+        execute_extensions_addons: bool,
+        dev: bool
     ) -> Result<Self> {
         Host::assemble(
             self.host.clone_without_extensions(),
@@ -627,7 +629,7 @@ impl CloneableHost {
             self.options.clone(),
             self.addons.clone(),
             custom_exts,
-            true,
+            execute_extensions_addons,
             &self.config_dir,
             &self.root_config_dir,
             self.has_auto_cert,
