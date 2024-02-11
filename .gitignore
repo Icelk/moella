@@ -1,1 +1,7 @@
 /target
+
+# bins
+moella-*
+kvarnctl-*
+chute-*
+*.exe

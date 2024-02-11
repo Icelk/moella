@@ -1095,7 +1095,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "base64",
  "brotli",
@@ -1152,7 +1152,7 @@ dependencies = [
 
 [[package]]
 name = "kvarn-extensions"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "async_chunked_transfer",
  "dashmap",
@@ -1415,7 +1415,7 @@ dependencies = [
 
 [[package]]
 name = "moella"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "env_logger",

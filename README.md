@@ -91,8 +91,7 @@ To run it, download the binary appropriate for your platform.
 
 [Install Rust](https://rust-lang.org/learn/get-started) and then run the following:
 
-> This doesn't currently work, as we haven't published to crates.io yet.
-> You'll have to set up the [development environment](#development).
+**If you're on macOS or Windows, you need to add `--no-default-features -F bin`.
 
 ```shell
 $ cargo install moella
