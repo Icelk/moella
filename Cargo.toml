@@ -1,6 +1,6 @@
 [package]
 name = "moella"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Icelk <main@icelk.dev>"]
 edition = "2021"
 rust-version = "1.56"
@@ -21,7 +21,7 @@ required-features = ["bin"]
 
 [dependencies]
 kvarn = { path = "../kvarn", default-features = false, features = ["full"], version = "0.6" }
-kvarn-extensions = { path = "../kvarn/extensions", features = ["reverse-proxy", "certificate"], version = "0.6" }
+kvarn-extensions = { path = "../kvarn/extensions", features = ["reverse-proxy", "certificate"], version = "0.6.1" }
 kvarn-search = { path = "../kvarn-search", version = "0.5" }
 kvarn-auth = { path = "../kvarn-auth", version = "0.2" }
 http = "1.0"
