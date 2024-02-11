@@ -24,6 +24,7 @@ pub(crate) struct KvarnConfig {
 pub struct CliOptions<'a> {
     pub high_ports: bool,
     pub cache: bool,
+    pub dev: bool,
     pub default_host: Option<&'a str>,
 }
 
@@ -142,7 +143,13 @@ pub async fn read_and_resolve(
         }
         for host in cfg.hosts {
             let host = host
-                .resolve(&extensions, custom_extensions, config_dir, root_config_dir)
+                .resolve(
+                    &extensions,
+                    custom_extensions,
+                    config_dir,
+                    root_config_dir,
+                    opts.dev,
+                )
                 .await?;
 
             info!(

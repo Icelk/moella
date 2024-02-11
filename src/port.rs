@@ -53,6 +53,7 @@ impl HostSource {
                     exts,
                     custom_exts,
                     opts,
+                    true,
                 )
                 .await?;
                 Ok(collection)
@@ -64,6 +65,7 @@ impl HostSource {
                     exts,
                     custom_exts,
                     opts,
+                    true,
                 )
                 .await?;
                 Ok(collection)
@@ -75,6 +77,7 @@ impl HostSource {
                     exts,
                     custom_exts,
                     opts,
+                    true,
                 )
                 .await?;
                 Ok(collection)

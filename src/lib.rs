@@ -29,7 +29,11 @@ pub fn command() -> clap::Command {
     .arg(
         Arg::new("high_ports")
             .long("high-ports")
-            .help("Bind to higher ports (8080, 8443) to avoid permission issues")
+            .help(
+                "Bind to higher ports (8080, 8443) to avoid permission issues. \
+                Doesn't modify any other behaviour: \
+                this is a good way to test the production environment.",
+            )
             .action(clap::ArgAction::SetTrue),
     )
     .arg(
@@ -92,6 +96,7 @@ pub async fn run(
     let opts = CliOptions {
         high_ports: matches.get_flag("high_ports") || matches.get_flag("dev"),
         cache: !matches.get_flag("dev"),
+        dev: matches.get_flag("dev"),
         default_host: matches.get_one::<String>("host").map(String::as_str),
     };
 

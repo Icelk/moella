@@ -185,6 +185,7 @@ impl Host {
         config_dir: &Path,
         root_config_dir: &Path,
         has_auto_cert: bool,
+        dev: bool,
     ) -> Result<CloneableHost> {
         let opts_clone = options.clone();
         if let Some(true) = options.disable_fs_cache {
@@ -384,6 +385,7 @@ impl Host {
                             root_config_dir.join(creds),
                             cert_path,
                             pk_path,
+                            dev,
                         )
                         .await;
                     }
@@ -439,6 +441,7 @@ impl Host {
         custom_exts: &CustomExtensions,
         config_dir: &Path,
         root_config_dir: &Path,
+        dev: bool,
     ) -> Result<CloneableHost> {
         match self {
             Host::Plain {
@@ -512,6 +515,7 @@ impl Host {
                     config_dir,
                     root_config_dir,
                     contains_auto_cert,
+                    dev,
                 )
                 .await
             }
@@ -560,6 +564,7 @@ impl Host {
                     config_dir,
                     root_config_dir,
                     contains_auto_cert,
+                    dev,
                 )
                 .await
             }
@@ -590,6 +595,7 @@ impl Host {
                     config_dir,
                     root_config_dir,
                     false,
+                    dev,
                 )
                 .await
             }
@@ -633,6 +639,7 @@ impl CloneableHost {
             &self.config_dir,
             &self.root_config_dir,
             self.has_auto_cert,
+            dev,
         )
         .await
     }
