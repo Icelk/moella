@@ -273,10 +273,10 @@ impl Host {
                         }
                         match &config.ignore_extensions {
                             Some(SearchEngineIgnoreExtensions::Only(v)) => {
-                                opts.ignore_extensions = v.clone()
+                                opts.ignore_extensions.clone_from(v);
                             }
                             Some(SearchEngineIgnoreExtensions::ExtendDefaults(v)) => {
-                                opts.ignore_extensions.extend_from_slice(v)
+                                opts.ignore_extensions.extend_from_slice(v);
                             }
                             None => {}
                         }

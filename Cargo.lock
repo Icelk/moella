@@ -884,7 +884,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http 1.0.0",
+ "http",
  "indexmap",
  "slab",
  "tokio",
@@ -901,7 +901,7 @@ dependencies = [
  "bytes",
  "fastrand",
  "futures-util",
- "http 1.0.0",
+ "http",
  "pin-project-lite",
  "tokio",
  "tracing",
@@ -963,17 +963,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "http"
-version = "0.2.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8947b1a6fad4393052c7ba1f4cd97bed3e953a95c79c92ad9b051a04611d9fbb"
-dependencies = [
- "bytes",
- "fnv",
- "itoa",
 ]
 
 [[package]]
@@ -1106,7 +1095,7 @@ dependencies = [
  "futures-util",
  "h2",
  "h3",
- "http 1.0.0",
+ "http",
  "kvarn-h3-quinn",
  "kvarn-quinn",
  "kvarn-tokio-uring",
@@ -1175,14 +1164,13 @@ dependencies = [
 
 [[package]]
 name = "kvarn-fastcgi-client"
-version = "0.1.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e12840c02d91c52f104e54ddcb29c46c1e5cd15eb6a887b6cdeba4b95201e7b0"
+checksum = "f7791cd05986e79a438b811fa0f8f61852fc93fb4ebc539093c8d6aeae2ac03a"
 dependencies = [
- "http 0.2.11",
- "log",
  "thiserror",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1284,7 +1272,7 @@ name = "kvarn_async"
 version = "0.6.0"
 dependencies = [
  "bytes",
- "http 1.0.0",
+ "http",
  "kvarn_utils",
  "tokio",
 ]
@@ -1305,7 +1293,7 @@ version = "0.6.0"
 dependencies = [
  "bytes",
  "compact_str",
- "http 1.0.0",
+ "http",
  "log",
  "percent-encoding",
 ]
@@ -1419,7 +1407,7 @@ version = "0.1.1"
 dependencies = [
  "clap",
  "env_logger",
- "http 1.0.0",
+ "http",
  "kvarn",
  "kvarn-auth",
  "kvarn-extensions",

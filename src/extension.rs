@@ -61,6 +61,7 @@ impl Extension {
         host: &kvarn::host::Host,
         custom_exts: &CustomExtensions,
         config_dir: &Path,
+        tmpl_cache: &Arc<kvarn_extensions::templates::Cache>,
     ) -> Result<Option<Box<Extension>>> {
         match self {
             Self::If {
@@ -120,12 +121,15 @@ impl Extension {
                     )
                 }
             }
-            Self::AllDefaults => kvarn_extensions::mount_all(exts),
-            // `TODO`: use cache from ↑
-            Self::Templates => exts.add_present_internal(
-                "tmpl",
-                kvarn_extensions::templates_ext(kvarn_extensions::templates::Cache::new()),
-            ),
+            Self::AllDefaults => {
+                kvarn_extensions::mount_all(exts);
+                exts.add_present_internal(
+                    "tmpl",
+                    kvarn_extensions::templates_ext(tmpl_cache.clone()),
+                )
+            }
+            Self::Templates => exts
+                .add_present_internal("tmpl", kvarn_extensions::templates_ext(tmpl_cache.clone())),
             Self::Http2Push {
                 push_interval,
                 check_every_request,
@@ -340,11 +344,26 @@ impl IntermediaryExtensions {
         });
         Self { exts, defaults: d }
     }
-    fn into_parts(self) -> (kvarn::Extensions, Vec<Extension>) {
+    fn into_parts(
+        self,
+    ) -> (
+        kvarn::Extensions,
+        Vec<Extension>,
+        Arc<kvarn_extensions::templates::Cache>,
+    ) {
+        let tmpl_cache = kvarn_extensions::templates::Cache::new();
+
         if self.defaults {
-            (kvarn::Extensions::new(), self.exts)
+            let mut ext = kvarn::Extensions::new();
+            ext.add_present_internal("download", Box::new(kvarn_extensions::download));
+            ext.add_present_internal("cache", Box::new(kvarn_extensions::cache));
+            ext.add_present_internal("hide", kvarn_extensions::hide(tmpl_cache.clone()));
+            ext.add_present_file("private", kvarn_extensions::hide(tmpl_cache.clone()));
+            ext.add_present_internal("allow-ips", Box::new(kvarn_extensions::ip_allow));
+
+            (ext, self.exts, tmpl_cache)
         } else {
-            (kvarn::Extensions::empty(), self.exts)
+            (kvarn::Extensions::empty(), self.exts, tmpl_cache)
         }
     }
 }
@@ -360,14 +379,18 @@ pub async fn build_extensions(
 ) -> Result<kvarn::Extensions> {
     let intermediary = IntermediaryExtensions::new(exts);
     let defaults = intermediary.defaults;
-    let (mut exts, v) = intermediary.into_parts();
+    let (mut exts, v, tmpl_cache) = intermediary.into_parts();
 
     exts.with_server_header("Kvarn/0.6.0 Moella/0.1.0", true, true);
 
     for ext in v {
-        let mut ext2 = ext.mount(&mut exts, host, custom_exts, cfg_dir).await?;
+        let mut ext2 = ext
+            .mount(&mut exts, host, custom_exts, cfg_dir, &tmpl_cache)
+            .await?;
         while let Some(ext) = ext2.take() {
-            ext2 = ext.mount(&mut exts, host, custom_exts, cfg_dir).await?;
+            ext2 = ext
+                .mount(&mut exts, host, custom_exts, cfg_dir, &tmpl_cache)
+                .await?;
         }
     }
     if (host.is_secure() || has_auto_cert) && defaults {
@@ -385,13 +408,17 @@ pub async fn build_extensions_inherit(
     cfg_dir: &Path,
 ) -> Result<kvarn::Extensions> {
     let intermediary = IntermediaryExtensions::new(exts);
-    let (_exts, v) = intermediary.into_parts();
+    let (_exts, v, tmpl_cache) = intermediary.into_parts();
     let mut exts = extensions;
 
     for ext in v {
-        let mut ext2 = ext.mount(&mut exts, host, custom_exts, cfg_dir).await?;
+        let mut ext2 = ext
+            .mount(&mut exts, host, custom_exts, cfg_dir, &tmpl_cache)
+            .await?;
         while let Some(ext) = ext2.take() {
-            ext2 = ext.mount(&mut exts, host, custom_exts, cfg_dir).await?;
+            ext2 = ext
+                .mount(&mut exts, host, custom_exts, cfg_dir, &tmpl_cache)
+                .await?;
         }
     }
 
