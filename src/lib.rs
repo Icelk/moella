@@ -87,7 +87,7 @@ pub async fn run(
 
     let env_log = env_logger::Env::new().filter_or(
         "KVARN_LOG",
-        "rustls=off,h3::proto::frame=error,h3::connection=error,info",
+        "rustls=off,h3::proto::frame=error,h3::connection=error,html5ever::tree_builder=error,info",
     );
     env_logger::Builder::from_env(env_log).init();
 
