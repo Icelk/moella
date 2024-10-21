@@ -158,6 +158,13 @@ impl Extension {
                 )
             })?,
             Self::ReverseProxy(config) => {
+                kvarn_extensions::force_cache(
+                    exts,
+                    vec![(
+                        config.route.clone(),
+                        kvarn::comprash::ClientCachePreference::Ignore,
+                    )],
+                );
                 let mut proxy = kvarn_extensions::ReverseProxy::base(
                     &config.route,
                     kvarn_extensions::reverse_proxy::static_connection(parse_connection(
