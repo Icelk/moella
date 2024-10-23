@@ -830,7 +830,7 @@ fn parse_connection(s: &str) -> Result<kvarn_extensions::Connection> {
         current
     };
 
-    if let Some(socket) = s.strip_prefix("tcp:") {
+    if let Some(socket) = s.strip_prefix("tcp:").or(s.strip_prefix("http:")) {
         let socket = socket.strip_prefix("//").unwrap_or(socket);
         let socket = select_addr(
             socket
