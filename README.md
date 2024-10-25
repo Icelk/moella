@@ -110,3 +110,40 @@ During development, Mölla requires
 [Kvarn](https://github.com/Icelk/kvarn) to be cloned at `../kvarn`,
 [Kvarn Search](https://github.com/Icelk/kvarn-search) at `../kvarn-search`,
 and [Kvarn Auth](https://github.com/Icelk/kvarn-auth) at `../kvarn-auth`.
+
+# Changelog
+
+## [v0.2.0](https://github.com/Icelk/moella/compare/v0.1.1...v0.2.0)
+
+Many bugfixes to reverse proxy, including websockets finally working and body
+streaming for large files (e.g. movies through Jellyfin). **Zstd** is also
+supported now, and compression levels are generally more fitting.
+
+### Added
+
+-   Zstd compression
+-   Reverse proxy body streaming for large files
+-   You can now use e.g. `http://10.0.0.12:8096` as an option to the reverse proxy.
+    Previously "tcp" was the only option.
+-   Option to make systemd services work with a bug in io_uring (kvarnctl)
+    -   Sometimes a double-free happens after Kvarn has finished. This can be
+        ignored, and so a flag to ignore that was added to kvarnctl
+
+### Improved
+
+-   Faster HTTP/3
+-   Dynamic compress based on if the response is cached or not.
+-   Make io_uring even faster with less allocations
+-   Performance related to HTTP/1 requests and responses. Also useful for other
+    HTTP versions when reverse proxy is used (HTTP/1 is used for reverse proxy).
+-   Updated dependencies
+
+### Fixed
+
+-   **Caching issues for reverse proxy**
+-   **Reverse proxy websockets**.
+-   Reverse proxy for Jellyfin
+-   Auto cert made more robust
+-   Auto cert in development behaves better
+-   Auto cert private key having permission 644 instead of 600
+-   kvarn_signal (used by kvarnctl) fixed commands sometimes not being sent
