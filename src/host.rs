@@ -29,6 +29,10 @@ pub struct HostOptions {
     hsts: Option<bool>,
     brotli_level: Option<u32>,
     gzip_level: Option<u32>,
+    zstd_level: Option<i32>,
+    brotli_oneshot_level: Option<u32>,
+    gzip_oneshot_level: Option<u32>,
+    zstd_oneshot_level: Option<i32>,
     folder_default: Option<String>,
     extension_default: Option<String>,
     public_data_directory: Option<String>,
@@ -208,6 +212,36 @@ impl Host {
                 return Err("GZIP level has to be in the range 1..=10".into());
             }
             host.set_gzip_level(level);
+        }
+        if let Some(level) = options.zstd_level {
+            if !(1..=22).contains(&level) {
+                return Err("Zstd level has to be in the range 1..=10".into());
+            }
+            if (20..=22).contains(&level) {
+                log::warn!("Using a very high compression for zstd. This is not recommended.");
+            }
+            host.set_zstd_level(level);
+        }
+        if let Some(level) = options.brotli_oneshot_level {
+            if !(1..=10).contains(&level) {
+                return Err("Brotli level has to be in the range 1..=10".into());
+            }
+            host.set_brotli_level_oneshot(level);
+        }
+        if let Some(level) = options.gzip_oneshot_level {
+            if !(1..=10).contains(&level) {
+                return Err("GZIP level has to be in the range 1..=10".into());
+            }
+            host.set_gzip_level_oneshot(level);
+        }
+        if let Some(level) = options.zstd_oneshot_level {
+            if !(1..=22).contains(&level) {
+                return Err("Zstd level has to be in the range 1..=10".into());
+            }
+            if (20..=22).contains(&level) {
+                log::warn!("Using a very high compression for zstd. This is not recommended.");
+            }
+            host.set_zstd_level_oneshot(level);
         }
         if let Some(alts) = options.alternative_names {
             for alt in alts {

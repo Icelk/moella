@@ -39,14 +39,14 @@ Next, create a config file, let's say `host.ron`:
             // most of this can be removed; it's just an example
             Csp ({
                 "/*": FromDefault ({
-                    script_src: [UnsafeInline, WasmUnsafeEval],
+                    script_src: [ UnsafeInline, WasmUnsafeEval ],
                     style_src: [
                         Uri("https://fonts.googleapis.com"),
                         Uri("https://fonts.googleapis.com"),
                         UnsafeInline,
                     ],
                     default_src: [ Uri("https://fonts.gstatic.com") ],
-                    img_src: [Uri("*"), Scheme("data:")]
+                    img_src: [ Uri("*"), Scheme("data:") ]
                 }),
                 // SVG XSS attacks if viewing file
                 "/groups/logo-images/*": FromDefault ({}),
@@ -61,12 +61,14 @@ Next, create a config file, let's say `host.ron`:
             }),
         ]
     },
-    import: [/* some other config file */],
+    import: ["./some-other.config-file.ron"],
     ports: Standard(All),
 )
 ```
 
 Now, run `moella -c host.ron --dev`. Your website should be working. Remove the `--dev` flag when deploying.
+
+> [Link to a systemd service template](https://github.com/Icelk/kvarn/blob/main/sample.service)
 
 See [kvarn.org](https://kvarn.org/moella/) for more details.
 
