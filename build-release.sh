@@ -1,7 +1,6 @@
 #!/bin/sh
 
-echo "Maybe you need to link some libraries."
-sudo -c "ln -s /lib/libicudata.so /lib/libicudata.so.74; ln -s /lib/libicuuc.so /lib/libicuuc.so.74; /lib/libicui18n.so /lib/libicui18n.so.74"
+echo "You need to have osxcross installed and built at ~/dev/Rust/osxcross"
 
 # You have to have the following in your ~/.cargo/config.toml
 # and have installed osxcross!
@@ -14,7 +13,7 @@ cb() {
     cargo build --profile distribution $@
 }
 cb_mac() {
-    CC=x86_64-apple-darwin23-clang LD_LIBRARY_PATH="$HOME/dev/Rust/osxcross/target/lib" cb --target x86_64-apple-darwin $@
+    CC=x86_64-apple-darwin23-clang LD_LIBRARY_PATH="$HOME/dev/Rust/osxcross/target/lib" RUST_FLAGS="-L $HOME/dev/Rust/osxcross/target/lib" cb --target x86_64-apple-darwin $@
 }
 cb_win() {
     cb --target x86_64-pc-windows-gnu $@
