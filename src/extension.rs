@@ -388,7 +388,7 @@ pub async fn build_extensions(
     let defaults = intermediary.defaults;
     let (mut exts, v, tmpl_cache) = intermediary.into_parts();
 
-    exts.with_server_header("Kvarn/0.6.0 Moella/0.1.0", true, true);
+    exts.with_server_header(format!("{} Moella/0.2.0", kvarn::extensions::SERVER_NAME_VERSION), true, true);
 
     for ext in v {
         let mut ext2 = ext

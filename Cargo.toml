@@ -1,5 +1,6 @@
 [package]
 name = "moella"
+# also update "Moella/0.2.0" in src/extension.rs
 version = "0.2.0"
 authors = ["Icelk <main@icelk.dev>"]
 edition = "2021"
