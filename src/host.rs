@@ -139,6 +139,7 @@ impl Host {
         host: &kvarn::host::Host,
         custom_exts: &CustomExtensions,
         has_auto_cert: bool,
+        dev: bool,
     ) -> Result<kvarn::Extensions> {
         let mut exts = selected.iter();
         if let Some(first) = exts.next() {
@@ -153,6 +154,7 @@ impl Host {
                     .parent()
                     .expect("config file is in no directory"),
                 has_auto_cert,
+                dev,
             )
             .await?;
             for ext in exts {
@@ -167,6 +169,7 @@ impl Host {
                     Path::new(&ext.1)
                         .parent()
                         .expect("config file is in no directory"),
+                    dev,
                 )
                 .await?;
             }
@@ -268,9 +271,15 @@ impl Host {
 
         // set extensions
         if execute_extensions_addons {
-            let mut extensions =
-                Self::resolve_extensions(&exts, ext_bundles, &host, custom_exts, has_auto_cert)
-                    .await?;
+            let mut extensions = Self::resolve_extensions(
+                &exts,
+                ext_bundles,
+                &host,
+                custom_exts,
+                has_auto_cert,
+                dev,
+            )
+            .await?;
             for addon in &addons {
                 match addon {
                     HostAddon::SearchEngine(config) => {

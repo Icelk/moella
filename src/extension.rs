@@ -18,6 +18,8 @@ pub enum Extension {
         predicate: Predicate,
         extension: Box<Extension>,
     },
+    Dev(Box<Extension>),
+    Prod(Box<Extension>),
 
     NoDefaults,
     Referrer(Option<String>),
@@ -62,14 +64,25 @@ impl Extension {
         custom_exts: &CustomExtensions,
         config_dir: &Path,
         tmpl_cache: &Arc<kvarn_extensions::templates::Cache>,
+        dev: bool,
     ) -> Result<Option<Box<Extension>>> {
         match self {
             Self::If {
                 predicate,
                 extension,
             } => {
-                if predicate.resolve(config_dir) {
+                if predicate.resolve(config_dir, dev) {
                     return Ok(Some(extension));
+                }
+            }
+            Self::Dev(ext) => {
+                if Predicate::Dev.resolve(config_dir, dev) {
+                    return Ok(Some(ext));
+                }
+            }
+            Self::Prod(ext) => {
+                if Predicate::Prod.resolve(config_dir, dev) {
+                    return Ok(Some(ext));
                 }
             }
             Self::NoDefaults => unreachable!(
@@ -383,6 +396,7 @@ pub async fn build_extensions(
     custom_exts: &CustomExtensions,
     cfg_dir: &Path,
     has_auto_cert: bool,
+    dev: bool,
 ) -> Result<kvarn::Extensions> {
     let intermediary = IntermediaryExtensions::new(exts);
     let defaults = intermediary.defaults;
@@ -396,11 +410,11 @@ pub async fn build_extensions(
 
     for ext in v {
         let mut ext2 = ext
-            .mount(&mut exts, host, custom_exts, cfg_dir, &tmpl_cache)
+            .mount(&mut exts, host, custom_exts, cfg_dir, &tmpl_cache, dev)
             .await?;
         while let Some(ext) = ext2.take() {
             ext2 = ext
-                .mount(&mut exts, host, custom_exts, cfg_dir, &tmpl_cache)
+                .mount(&mut exts, host, custom_exts, cfg_dir, &tmpl_cache, dev)
                 .await?;
         }
     }
@@ -417,6 +431,7 @@ pub async fn build_extensions_inherit(
     host: &kvarn::host::Host,
     custom_exts: &CustomExtensions,
     cfg_dir: &Path,
+    dev: bool,
 ) -> Result<kvarn::Extensions> {
     let intermediary = IntermediaryExtensions::new(exts);
     let (_exts, v, tmpl_cache) = intermediary.into_parts();
@@ -424,11 +439,11 @@ pub async fn build_extensions_inherit(
 
     for ext in v {
         let mut ext2 = ext
-            .mount(&mut exts, host, custom_exts, cfg_dir, &tmpl_cache)
+            .mount(&mut exts, host, custom_exts, cfg_dir, &tmpl_cache, dev)
             .await?;
         while let Some(ext) = ext2.take() {
             ext2 = ext
-                .mount(&mut exts, host, custom_exts, cfg_dir, &tmpl_cache)
+                .mount(&mut exts, host, custom_exts, cfg_dir, &tmpl_cache, dev)
                 .await?;
         }
     }
@@ -443,14 +458,18 @@ pub enum Predicate {
     And(Vec<Predicate>),
     Or(Vec<Predicate>),
     Exists(String),
+    Dev,
+    Prod,
 }
 impl Predicate {
-    pub fn resolve(&self, config_dir: &Path) -> bool {
+    pub fn resolve(&self, config_dir: &Path, dev: bool) -> bool {
         match self {
-            Self::Not(p) => !p.resolve(config_dir),
-            Self::And(ps) => ps.iter().all(|p| p.resolve(config_dir)),
-            Self::Or(ps) => ps.iter().any(|p| p.resolve(config_dir)),
+            Self::Not(p) => !p.resolve(config_dir, dev),
+            Self::And(ps) => ps.iter().all(|p| p.resolve(config_dir, dev)),
+            Self::Or(ps) => ps.iter().any(|p| p.resolve(config_dir, dev)),
             Self::Exists(p) => config_dir.join(p).exists(),
+            Self::Dev => dev,
+            Self::Prod => !dev,
         }
     }
 }
