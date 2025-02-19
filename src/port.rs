@@ -114,7 +114,7 @@ impl PortsKind {
             One(u16),
             Several(&'a [u16]),
         }
-        impl<'a> Display for NPorts<'a> {
+        impl Display for NPorts<'_> {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 match self {
                     NPorts::One(port) => write!(f, "port {port}"),
