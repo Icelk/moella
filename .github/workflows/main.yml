@@ -46,7 +46,7 @@ jobs:
             - name: Compile
               run: cargo build --profile distribution -F bin --bin moella
             - name: Upload bin artefact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: moella
                   path: target/distribution/moella
